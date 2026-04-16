@@ -27,7 +27,7 @@ export default function Sidebar({ channels, selectedChannelId, onSelectChannel }
           priority
           className="h-auto w-auto max-w-full"
         />
-        <span className="mt-3 inline-flex rounded-full bg-[#22C55E]/15 px-3 py-1 text-xs font-semibold text-[#22C55E]">
+        <span className="mt-3 inline-flex rounded-full bg-[#10b981]/15 px-3 py-1 text-xs font-semibold text-[#10b981]">
           En vivo
         </span>
       </div>
@@ -55,8 +55,8 @@ export default function Sidebar({ channels, selectedChannelId, onSelectChannel }
                       className={[
                         "group flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors",
                         isActive
-                          ? "border-[#22C55E]/40 bg-[#22C55E]/8 shadow-[inset_2px_0_0_0_#22C55E]"
-                          : "border-[var(--color-border)]/50 hover:border-[var(--color-border)] hover:bg-[var(--color-bg-main)]",
+                          ? "border-[#06b6d4]/40 bg-[#06b6d4]/8 shadow-[inset_2px_0_0_0_#06b6d4]"
+                          : "border-[var(--color-border)]/50 hover:border-[var(--color-accent)]/50 hover:bg-[var(--color-bg-main)]",
                         "cursor-pointer",
                       ].join(" ")}
                     >

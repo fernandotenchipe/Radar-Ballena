@@ -11,13 +11,18 @@
 }
 
 [data-theme="dark"] {
-  --color-bg-main: #04173a;
-  --color-bg-surface: #102545;
-  --color-bg-sidebar: #0d1e3a;
-  --color-border: #1e3559;
-  --color-text-primary: #e5e7eb;
-  --color-text-secondary: #9ca3af;
-  --color-accent: #1d4ed8;
+  --color-bg-main: #0a1628;
+  --color-bg-surface: #0f1f38;
+  --color-bg-sidebar: #061120;
+  --color-border: #1e3a5f;
+  --color-text-primary: #f0f4f8;
+  --color-text-secondary: #94a3b8;
+  --color-accent: #3b82f6;
+  --color-accent-secondary: #06b6d4;
+  --color-success: #10b981;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+  --color-info: #6366f1;
 }
 
 @theme inline {
@@ -47,6 +52,31 @@ h6 {
 }
 
 ::selection {
-  background: rgba(29, 78, 216, 0.45);
-  color: #e5e7eb;
+  background: rgba(59, 130, 246, 0.4);
+  color: #f0f4f8;
+}
+
+[data-theme="dark"] {
+  /* Gradientes y efectos visuales para enriquecer el diseño */
+  --bg-gradient: linear-gradient(135deg, #0a1628 0%, #0f1f38 50%, #06172a 100%);
+  --card-gradient: linear-gradient(135deg, #0f1f38 0%, #132a48 100%);
+  --border-gradient: linear-gradient(90deg, transparent, #3b82f6, transparent);
+}
+
+[data-theme="dark"] article {
+  background: var(--color-bg-surface);
+  border-color: var(--color-border);
+  position: relative;
+  overflow: hidden;
+}
+
+[data-theme="dark"] article::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent);
+  pointer-events: none;
 }

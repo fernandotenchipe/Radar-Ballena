@@ -160,11 +160,11 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                   {channelPreview.map((channel) => (
                     <article
                       key={channel.id}
-                      className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-main)] p-3"
+                      className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-main)] p-3 transition-all hover:border-[var(--color-accent)]/40"
                     >
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm font-semibold text-[var(--color-text-primary)]">{channel.name}</p>
-                        <span className="rounded-full bg-[#F59E0B]/15 px-2 py-0.5 text-xs font-semibold text-[#F59E0B]">
+                        <span className="rounded-full bg-[#f59e0b]/15 px-2 py-0.5 text-xs font-semibold text-[#f59e0b]">
                           {channel.isSubscribed ? "Desbloqueado" : "Bloqueado"}
                         </span>
                       </div>
@@ -182,7 +182,7 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                         <button
                           type="button"
                           onClick={() => unlockChannel(channel.id)}
-                          className="mt-3 rounded-full border border-[#1D4ED8]/40 bg-[#1D4ED8]/10 px-3 py-1.5 text-xs font-semibold text-[#1D4ED8] transition-colors hover:bg-[#1D4ED8]/15"
+                          className="mt-3 rounded-full border border-[#3b82f6]/40 bg-[#3b82f6]/10 px-3 py-1.5 text-xs font-semibold text-[#3b82f6] transition-colors hover:bg-[#3b82f6]/15 hover:border-[#3b82f6]/60"
                         >
                           Desbloquear canal
                         </button>
@@ -208,7 +208,7 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                     return (
                       <article
                         key={whale.id}
-                        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-main)] p-3"
+                        className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-main)] p-3 transition-all hover:border-[var(--color-accent)]/40"
                       >
                         <div className="flex items-center justify-between gap-3">
                           <p className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -221,17 +221,17 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
 
                         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-[var(--color-border)]/70">
                           <div
-                            className="h-full rounded-full bg-[#22C55E]"
+                            className="h-full rounded-full bg-gradient-to-r from-[#10b981] to-[#06b6d4]"
                             style={{ width: `${winRate}%` }}
                           />
                         </div>
 
                         <div className="mt-2 flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
                           <span>
-                            Wins: <span className="font-semibold text-[#22C55E]">{whale.wins}</span>
+                            Wins: <span className="font-semibold text-[#10b981]">{whale.wins}</span>
                           </span>
                           <span>
-                            Losses: <span className="font-semibold text-[#EF4444]">{whale.losses}</span>
+                            Losses: <span className="font-semibold text-[#ef4444]">{whale.losses}</span>
                           </span>
                         </div>
                       </article>
@@ -280,7 +280,7 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                   <button
                     type="button"
                     onClick={subscribeToSelectedChannel}
-                    className="mt-5 rounded-full border border-[#1D4ED8]/40 bg-[#1D4ED8]/10 px-4 py-2 text-sm font-semibold text-[#1D4ED8] transition-colors hover:bg-[#1D4ED8]/15"
+                    className="mt-5 rounded-full border border-[#3b82f6]/40 bg-[#3b82f6]/10 px-4 py-2 text-sm font-semibold text-[#3b82f6] transition-colors hover:bg-[#3b82f6]/15 hover:border-[#3b82f6]/60"
                   >
                     Suscribirme Al Canal
                   </button>

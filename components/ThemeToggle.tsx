@@ -35,7 +35,7 @@ export default function ThemeToggle() {
         className={[
           "rounded-full px-3 py-1 text-xs font-semibold transition-colors",
           theme === "light"
-            ? "border border-[#1D4ED8]/40 bg-[#1D4ED8]/10 text-[#1D4ED8]"
+            ? "border border-[#3b82f6]/40 bg-[#3b82f6]/10 text-[#3b82f6]"
             : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]",
         ].join(" ")}
       >
@@ -47,7 +47,7 @@ export default function ThemeToggle() {
         className={[
           "rounded-full px-3 py-1 text-xs font-semibold transition-colors",
           theme === "dark"
-            ? "border border-[#1D4ED8]/40 bg-[#1D4ED8]/10 text-[#1D4ED8]"
+            ? "border border-[#06b6d4]/40 bg-[#06b6d4]/10 text-[#06b6d4]"
             : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]",
         ].join(" ")}
       >

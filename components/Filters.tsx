@@ -7,10 +7,10 @@ type FiltersProps = {
 };
 
 const filterStyles: Record<FilterValue, string> = {
-  BUY: "text-[#22C55E] border-[var(--color-border)] hover:border-[#22C55E]/40 hover:bg-[#22C55E]/8",
-  SELL: "text-[#EF4444] border-[var(--color-border)] hover:border-[#EF4444]/40 hover:bg-[#EF4444]/8",
-  YES: "text-[#3B82F6] border-[var(--color-border)] hover:border-[#3B82F6]/40 hover:bg-[#3B82F6]/8",
-  NO: "text-[#F59E0B] border-[var(--color-border)] hover:border-[#F59E0B]/40 hover:bg-[#F59E0B]/8",
+  BUY: "text-[#10b981] border-[var(--color-border)] hover:border-[#10b981]/40 hover:bg-[#10b981]/8",
+  SELL: "text-[#ef4444] border-[var(--color-border)] hover:border-[#ef4444]/40 hover:bg-[#ef4444]/8",
+  YES: "text-[#06b6d4] border-[var(--color-border)] hover:border-[#06b6d4]/40 hover:bg-[#06b6d4]/8",
+  NO: "text-[#f59e0b] border-[var(--color-border)] hover:border-[#f59e0b]/40 hover:bg-[#f59e0b]/8",
 };
 
 export default function Filters({ activeFilter = "ALL" }: FiltersProps) {
@@ -26,7 +26,7 @@ export default function Filters({ activeFilter = "ALL" }: FiltersProps) {
             className={[
               "rounded-full border px-3.5 py-1 text-lg font-semibold leading-none transition-colors",
               filterStyles[filter],
-              isActive ? "border-[#1D4ED8]/45 bg-[#1D4ED8]/12" : "bg-transparent",
+              isActive ? "border-[#06b6d4]/45 bg-[#06b6d4]/12" : "bg-transparent",
             ].join(" ")}
           >
             {filter}

@@ -20,20 +20,25 @@ type AlertCardProps = {
 };
 
 const actionStyles: Record<AlertAction, string> = {
-  BUY: "text-[#22C55E]",
-  SELL: "text-[#EF4444]",
+  BUY: "text-[#10b981] font-semibold",
+  SELL: "text-[#ef4444] font-semibold",
 };
 
 const outcomeStyles: Record<AlertOutcome, string> = {
-  YES: "text-[#3B82F6]",
-  NO: "text-[#F59E0B]",
+  YES: "text-[#06b6d4] font-semibold",
+  NO: "text-[#f59e0b] font-semibold",
+};
+
+const actionBgStyles: Record<AlertAction, string> = {
+  BUY: "bg-[#10b981]/10 border-l-2 border-[#10b981]",
+  SELL: "bg-[#ef4444]/10 border-l-2 border-[#ef4444]",
 };
 
 export default function AlertCard({ alert }: AlertCardProps) {
   return (
-    <article className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4 shadow-sm sm:p-5">
+    <article className={`rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4 shadow-sm transition-all hover:shadow-lg hover:border-[var(--color-accent)]/40 sm:p-5 ${actionBgStyles[alert.action]}`}>
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
           Whale Alert
         </p>
         <p className="text-xs text-[var(--color-text-secondary)] sm:text-sm">{alert.timestamp}</p>
@@ -41,9 +46,9 @@ export default function AlertCard({ alert }: AlertCardProps) {
 
       <p className="mt-2 text-sm text-[var(--color-text-secondary)]">👤 {alert.trader}</p>
 
-      <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-        📈 <span className={`font-semibold ${actionStyles[alert.action]}`}>{alert.action}</span>{" "}
-        <span className={`font-semibold ${outcomeStyles[alert.outcome]}`}>
+      <p className="mt-1 text-sm">
+        📈 <span className={actionStyles[alert.action]}>{alert.action}</span>{" "}
+        <span className={outcomeStyles[alert.outcome]}>
           {alert.outcome === "YES" ? "Yes" : "No"}
         </span>
       </p>

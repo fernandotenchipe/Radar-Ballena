@@ -1,65 +1,119 @@
-import Image from "next/image";
+import DashboardLayout from "@/components/Layout";
+import { AlertItem } from "@/components/AlertCard";
+import { FeedChannel, WhalePerformance } from "@/components/Layout";
+
+const baseAlerts: AlertItem[] = [
+  {
+    id: "1",
+    category: "Geopolitical Macro",
+    trader: "Geopolitical Macro Omega",
+    question: "¿El petróleo crudo (CL) alcanzará (ALTO) $120 para finales de junio?",
+    action: "BUY",
+    outcome: "YES",
+    size: "$1.6k",
+    price: "47¢",
+    shares: "3,333",
+    timestamp: "hace 2 min",
+  },
+  {
+    id: "2",
+    category: "NBA Volume",
+    trader: "NBA Volume Alpha",
+    question: "¿Ganarán los Celtics el título NBA 2026?",
+    action: "BUY",
+    outcome: "YES",
+    size: "$7.2k",
+    price: "61¢",
+    shares: "8,400",
+    timestamp: "hace 11 min",
+  },
+  {
+    id: "3",
+    category: "Geopolitical Macro",
+    trader: "Geopolitical Macro Prime",
+    question: "¿Ganará la oposición las elecciones de Turquía 2026?",
+    action: "SELL",
+    outcome: "YES",
+    size: "$4.1k",
+    price: "71¢",
+    shares: "6,000",
+    timestamp: "hace 34 min",
+  },
+  {
+    id: "4",
+    category: "Sports Grinder",
+    trader: "Sports Grinder Legacy",
+    question: "¿Ganará el Real Madrid la Champions League 2026?",
+    action: "BUY",
+    outcome: "NO",
+    size: "$3.2k",
+    price: "40¢",
+    shares: "7,500",
+    timestamp: "ayer 21:04",
+    isHistory: true,
+  },
+];
+
+const channels: FeedChannel[] = [
+  {
+    id: "depredador-deportivo",
+    name: "Depredador Deportivo",
+    alerts: baseAlerts,
+  },
+  {
+    id: "titan-futbol-esports",
+    name: "Titán del Fútbol Esports",
+    alerts: baseAlerts,
+  },
+  {
+    id: "titan-volumen-nba",
+    name: "Titán del Volumen NBA",
+    alerts: baseAlerts,
+  },
+  {
+    id: "dualista-nba-esports",
+    name: "Dualista NBA Esports",
+    alerts: baseAlerts,
+  },
+  {
+    id: "trader-total-1",
+    name: "Trader Total",
+    alerts: baseAlerts,
+  },
+  {
+    id: "trader-total-2",
+    name: "Trader Total",
+    alerts: baseAlerts,
+  },
+  {
+    id: "arbitrajista-global",
+    name: "Arbitrajista Deportivo Global",
+    alerts: baseAlerts,
+  },
+  {
+    id: "especialista-deportivo",
+    name: "Especialista Deportivo",
+    alerts: baseAlerts,
+  },
+  {
+    id: "estratega-geopolitico",
+    name: "Estratega Geopolítico",
+    alerts: baseAlerts,
+  },
+];
+
+const whalePerformance: WhalePerformance[] = [
+  { id: "w1", whaleName: "Depredador Deportivo", wins: 37, losses: 18 },
+  { id: "w2", whaleName: "Titán del Fútbol Esports", wins: 29, losses: 21 },
+  { id: "w3", whaleName: "Titán del Volumen NBA", wins: 42, losses: 16 },
+  { id: "w4", whaleName: "Dualista NBA Esports", wins: 31, losses: 20 },
+  { id: "w5", whaleName: "Trader Total", wins: 34, losses: 26 },
+  { id: "w6", whaleName: "Trader Total", wins: 27, losses: 19 },
+  { id: "w7", whaleName: "Arbitrajista Deportivo Global", wins: 45, losses: 15 },
+  { id: "w8", whaleName: "Especialista Deportivo", wins: 39, losses: 17 },
+  { id: "w9", whaleName: "Estratega Geopolítico", wins: 33, losses: 23 },
+];
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+  return <DashboardLayout channels={channels} whalePerformance={whalePerformance} />;
 }

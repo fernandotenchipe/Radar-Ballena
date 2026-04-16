@@ -3,6 +3,8 @@
 import AlertCard, { AlertItem } from "@/components/AlertCard";
 import Sidebar, { SidebarChannel } from "@/components/Sidebar";
 import ThemeToggle from "@/components/ThemeToggle";
+import { useAuth } from "@/components/AuthContext";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 export type FeedChannel = {
@@ -33,6 +35,13 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
         channels.filter((channel) => channel.isSubscribedByDefault).map((channel) => channel.id),
       ),
   );
+  const { user, logout } = useAuth();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   const selectedChannel =
     channels.find((channel) => channel.id === selectedChannelId) ?? null;
@@ -134,7 +143,20 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                 Canal
               </button>
             </div>
-            <ThemeToggle />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[var(--color-text-secondary)]">
+                  {user?.email}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  className="rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 px-3 py-1 text-xs font-semibold text-[#ef4444] transition-colors hover:bg-[#ef4444]/15"
+                >
+                  Salir
+                </button>
+              </div>
+              <ThemeToggle />
+            </div>
           </div>
 
           {activeView === "panel" ? (

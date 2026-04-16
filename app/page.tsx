@@ -1,3 +1,8 @@
+"use client";
+
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/AuthContext";
 import DashboardLayout from "@/components/Layout";
 import { AlertItem } from "@/components/AlertCard";
 import { FeedChannel, WhalePerformance } from "@/components/Layout";
@@ -115,5 +120,18 @@ const whalePerformance: WhalePerformance[] = [
 ];
 
 export default function Home() {
+  const { isAuthenticated } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, router]);
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return <DashboardLayout channels={channels} whalePerformance={whalePerformance} />;
 }

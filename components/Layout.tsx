@@ -19,6 +19,7 @@ export type WhalePerformance = {
   whaleName: string;
   wins: number;
   losses: number;
+  winRate: number;
 };
 
 type DashboardLayoutProps = {

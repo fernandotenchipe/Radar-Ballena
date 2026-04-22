@@ -6,6 +6,9 @@ import { useAuth } from "@/components/AuthContext";
 import DashboardLayout from "@/components/Layout";
 import { FeedChannel, WhalePerformance } from "@/components/Layout";
 import { buildDashboardData, fetchAlerts, fetchStats } from "@/lib/alerts";
+import { translate } from "@/lib/translate";
+import { WHALE_NAMES_ES } from "@/lib/whales";
+import { translateAnswer } from "@/lib/format";
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
@@ -36,6 +39,38 @@ export default function Home() {
 
         const data = buildDashboardData(apiAlerts);
 
+        // Translate channel alerts' questions and map whale display names + answers
+        const translatedChannels: FeedChannel[] = await Promise.all(
+          data.channels.map(async (channel) => {
+            const alerts = await Promise.all(
+              channel.alerts.map(async (alert) => {
+                const translatedQuestion = await translate(alert.question);
+
+                // Try a few candidate keys to find a spanish display name in WHALE_NAMES_ES
+                const candidates = [
+                  alert.trader,
+                  alert.trader?.toLowerCase().replace(/\s+/g, "_"),
+                  alert.trader?.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+                ];
+
+                const foundKey = candidates.find((c) => c && WHALE_NAMES_ES[c as string]);
+                const whaleName = foundKey ? WHALE_NAMES_ES[foundKey as string] : alert.trader;
+
+                const outcome = translateAnswer(alert.outcome);
+
+                return {
+                  ...alert,
+                  trader: whaleName ?? alert.trader,
+                  outcome,
+                  question: translatedQuestion || alert.question,
+                };
+              }),
+            );
+
+            return { ...channel, alerts };
+          }),
+        );
+
         const whalePerformance = stats.map((w: {
           whaleId: string;
           whaleName: string;
@@ -54,7 +89,7 @@ export default function Home() {
           return;
         }
 
-        setChannels(data.channels);
+        setChannels(translatedChannels);
         setWhalePerformance(whalePerformance);
       } catch (error) {
         if (!isMounted) {

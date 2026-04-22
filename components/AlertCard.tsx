@@ -1,5 +1,6 @@
 type AlertAction = "BUY" | "SELL";
-type AlertOutcome = "YES" | "NO";
+type KnownAlertOutcome = "Yes" | "No" | "UNKNOWN";
+type AlertOutcome = string;
 
 export type AlertItem = {
   id: string;
@@ -24,9 +25,10 @@ const actionStyles: Record<AlertAction, string> = {
   SELL: "text-[#ef4444] font-semibold",
 };
 
-const outcomeStyles: Record<AlertOutcome, string> = {
-  YES: "text-[#06b6d4] font-semibold",
-  NO: "text-[#f59e0b] font-semibold",
+const outcomeStyles: Record<KnownAlertOutcome, string> = {
+  Yes: "text-[#06b6d4] font-semibold",
+  No: "text-[#f59e0b] font-semibold",
+  UNKNOWN: "text-[var(--color-text-secondary)] font-semibold",
 };
 
 const actionBgStyles: Record<AlertAction, string> = {
@@ -35,6 +37,11 @@ const actionBgStyles: Record<AlertAction, string> = {
 };
 
 export default function AlertCard({ alert }: AlertCardProps) {
+  const outcomeStyle =
+    outcomeStyles[alert.outcome as KnownAlertOutcome] ?? outcomeStyles.UNKNOWN;
+  const outcomeLabel =
+    alert.outcome && alert.outcome !== "UNKNOWN" ? alert.outcome : "Unknown";
+
   return (
     <article className={`rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4 shadow-sm transition-all hover:shadow-lg hover:border-[var(--color-accent)]/40 sm:p-5 ${actionBgStyles[alert.action]}`}>
       <div className="flex items-center justify-between gap-3">
@@ -48,8 +55,8 @@ export default function AlertCard({ alert }: AlertCardProps) {
 
       <p className="mt-1 text-sm">
         📈 <span className={actionStyles[alert.action]}>{alert.action}</span>{" "}
-        <span className={outcomeStyles[alert.outcome]}>
-          {alert.outcome === "YES" ? "Yes" : "No"}
+        <span className={outcomeStyle}>
+          {outcomeLabel}
         </span>
       </p>
 

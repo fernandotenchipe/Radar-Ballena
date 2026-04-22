@@ -2,14 +2,14 @@ import { AlertItem } from "@/components/AlertCard";
 import { FeedChannel, WhalePerformance } from "@/components/Layout";
 
 export type ApiAlert = {
-  whale_name: string;
+  whaleName: string;
   action: "BUY" | "SELL";
-  answer: "Yes" | "No";
-  market_title: string;
-  size_usd: number;
-  price_cents: number;
+  answer?: string;
+  marketTitle: string;
+  sizeUsd: number;
+  priceCents: number;
   shares: number;
-  created_at: string;
+  createdAt: string;
 };
 
 const usdCompactFormatter = new Intl.NumberFormat("en-US", {
@@ -43,10 +43,6 @@ function normalizeAction(action: string): "BUY" | "SELL" {
   return action === "SELL" ? "SELL" : "BUY";
 }
 
-function normalizeOutcome(answer: string): "YES" | "NO" {
-  return answer.toLowerCase() === "no" ? "NO" : "YES";
-}
-
 function formatSizeUsd(value: number): string {
   return usdCompactFormatter.format(value).replace("K", "k");
 }
@@ -69,7 +65,9 @@ function formatTimestamp(createdAt: string): string {
   return timestampFormatter.format(date);
 }
 
-function createChannelId(value: string): string {
+function createChannelId(value?: string): string {
+  if (!value) return "whale";
+
   const normalized = value
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
@@ -89,13 +87,13 @@ export async function fetchAlerts(): Promise<ApiAlert[]> {
     throw new Error(`No se pudieron obtener alerts (${res.status}).`);
   }
 
-  const data: unknown = await res.json();
+  const json = await res.json();
 
-  if (!Array.isArray(data)) {
-    throw new Error("Respuesta invalida del backend: se esperaba un array de alerts.");
+  if (!json.ok || !Array.isArray(json.data)) {
+    throw new Error("Respuesta invalida del backend");
   }
 
-  return data as ApiAlert[];
+  return json.data as ApiAlert[];
 }
 
 export function buildDashboardData(apiAlerts: ApiAlert[]): {
@@ -103,26 +101,26 @@ export function buildDashboardData(apiAlerts: ApiAlert[]): {
   whalePerformance: WhalePerformance[];
 } {
   const sortedAlerts = [...apiAlerts].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
   const groupedAlerts = new Map<string, AlertItem[]>();
 
   sortedAlerts.forEach((apiAlert, index) => {
-    const trader = apiAlert.whale_name;
-    const question = apiAlert.market_title;
+    const trader = apiAlert.whaleName ?? "Unknown Whale";
+    const question = apiAlert.marketTitle;
 
     const normalizedAlert: AlertItem = {
-      id: `${trader}-${apiAlert.created_at}-${index}`,
+      id: `${trader}-${apiAlert.createdAt}-${index}`,
       category: trader,
       trader,
       question,
       action: normalizeAction(apiAlert.action),
-      outcome: normalizeOutcome(apiAlert.answer),
-      size: formatSizeUsd(toNumber(apiAlert.size_usd)),
-      price: formatPriceCents(toNumber(apiAlert.price_cents)),
+      outcome: apiAlert.answer ?? "UNKNOWN",
+      size: formatSizeUsd(toNumber(apiAlert.sizeUsd)),
+      price: formatPriceCents(toNumber(apiAlert.priceCents)),
       shares: formatShares(toNumber(apiAlert.shares)),
-      timestamp: formatTimestamp(apiAlert.created_at),
+      timestamp: formatTimestamp(apiAlert.createdAt),
     };
 
     const current = groupedAlerts.get(trader);
@@ -144,20 +142,7 @@ export function buildDashboardData(apiAlerts: ApiAlert[]): {
     }),
   );
 
-  const whalePerformance: WhalePerformance[] = channels.map((channel) => {
-    const wins = channel.alerts.filter((alert) => alert.outcome === "YES").length;
-    const losses = channel.alerts.filter((alert) => alert.outcome === "NO").length;
-    const total = wins + losses;
-    const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
-
-    return {
-      id: `perf-${channel.id}`,
-      whaleName: channel.name,
-      wins,
-      losses,
-      winRate,
-    };
-  });
+  const whalePerformance: WhalePerformance[] = [];
 
   return { channels, whalePerformance };
 }

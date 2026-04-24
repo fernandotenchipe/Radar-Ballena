@@ -1,70 +1,130 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useState, ReactNode } from "react";
+
+type User = {
+  email: string;
+  role?: string;
+};
 
 type AuthContextType = {
   isAuthenticated: boolean;
-  user: { email: string } | null;
+  user: User | null;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const STORAGE_KEY = "rb-auth";
+const TOKEN_KEY = "rb-token";
+const USER_KEY = "rb-user";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+function getInitialAuthState(): {
+  isAuthenticated: boolean;
+  user: User | null;
+  token: string | null;
+} {
+  if (typeof window === "undefined") {
+    return {
+      isAuthenticated: false,
+      user: null,
+      token: null,
+    };
+  }
+
+  const savedToken = window.localStorage.getItem(TOKEN_KEY);
+  const savedUser = window.localStorage.getItem(USER_KEY);
+
+  if (!savedToken || !savedUser) {
+    return {
+      isAuthenticated: false,
+      user: null,
+      token: null,
+    };
+  }
+
+  try {
+    const parsedUser = JSON.parse(savedUser) as User;
+
+    if (!parsedUser?.email) {
+      throw new Error("Invalid stored user");
+    }
+
+    return {
+      isAuthenticated: true,
+      user: parsedUser,
+      token: savedToken,
+    };
+  } catch {
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(USER_KEY);
+
+    return {
+      isAuthenticated: false,
+      user: null,
+      token: null,
+    };
+  }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<{ email: string } | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Restaurar sesión al montar
-  useEffect(() => {
-    const savedAuth = window.localStorage.getItem(STORAGE_KEY);
-    if (savedAuth) {
-      try {
-        const data = JSON.parse(savedAuth);
-        setUser(data);
-        setIsAuthenticated(true);
-      } catch (error) {
-        window.localStorage.removeItem(STORAGE_KEY);
-      }
-    }
-    setIsLoading(false);
-  }, []);
+  const initialAuth = getInitialAuthState();
+  const [isAuthenticated, setIsAuthenticated] = useState(initialAuth.isAuthenticated);
+  const [user, setUser] = useState<User | null>(initialAuth.user);
+  const [token, setToken] = useState<string | null>(initialAuth.token);
 
   const login = async (email: string, password: string) => {
-    // Validación básica
     if (!email || !password) {
       throw new Error("Email y contraseña son requeridos");
     }
 
-    // Aquí iría una llamada real a tu API de autenticación
-    // Por ahora, simulamos un login exitoso
-    await new Promise((resolve) => setTimeout(resolve, 800));
+    if (!API_URL) {
+      throw new Error("NEXT_PUBLIC_API_URL no está configurada");
+    }
 
-    const userData = { email };
+    const res = await fetch(`${API_URL}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data?.ok) {
+      throw new Error(data?.error || "Credenciales inválidas");
+    }
+
+    const jwt = data.token;
+    const userData = data.user;
+
+    if (!jwt || !userData?.email) {
+      throw new Error("Respuesta de login inválida");
+    }
+
+    setToken(jwt);
     setUser(userData);
     setIsAuthenticated(true);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+
+    window.localStorage.setItem(TOKEN_KEY, jwt);
+    window.localStorage.setItem(USER_KEY, JSON.stringify(userData));
   };
 
   const logout = () => {
+    setToken(null);
     setUser(null);
     setIsAuthenticated(false);
-    window.localStorage.removeItem(STORAGE_KEY);
+
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(USER_KEY);
   };
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-main)]">
-        <div className="text-[var(--color-text-secondary)]">Cargando...</div>
-      </div>
-    );
-  }
-
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

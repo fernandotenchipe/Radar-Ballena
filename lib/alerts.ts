@@ -12,6 +12,20 @@ export type ApiAlert = {
   createdAt: string;
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+function getAuthHeaders(): Record<string, string> {
+  const token =
+    typeof window !== "undefined"
+      ? window.localStorage.getItem("rb-token")
+      : null;
+
+  return {
+    "Content-Type": "application/json",
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 const usdCompactFormatter = new Intl.NumberFormat("en-US", {
   style: "currency",
   currency: "USD",
@@ -77,23 +91,21 @@ function createChannelId(value?: string): string {
 }
 
 export async function fetchAlerts(): Promise<ApiAlert[]> {
-  if (!process.env.NEXT_PUBLIC_API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL no esta configurada.");
+  if (!API_URL) {
+    throw new Error("NEXT_PUBLIC_API_URL no está configurada");
   }
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/alerts`);
+  const res = await fetch(`${API_URL}/api/alerts`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
 
   if (!res.ok) {
-    throw new Error(`No se pudieron obtener alerts (${res.status}).`);
+    throw new Error(`No se pudieron obtener alerts (${res.status})`);
   }
 
   const json = await res.json();
-
-  if (!json.ok || !Array.isArray(json.data)) {
-    throw new Error("Respuesta invalida del backend");
-  }
-
-  return json.data as ApiAlert[];
+  return (json.data ?? []) as ApiAlert[];
 }
 
 export function buildDashboardData(apiAlerts: ApiAlert[]): {
@@ -148,16 +160,19 @@ export function buildDashboardData(apiAlerts: ApiAlert[]): {
 }
 
 export async function fetchStats() {
-  if (!process.env.NEXT_PUBLIC_API_URL) {
-    throw new Error("NEXT_PUBLIC_API_URL no configurada");
+  if (!API_URL) {
+    throw new Error("NEXT_PUBLIC_API_URL no está configurada");
   }
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/stats`);
+  const res = await fetch(`${API_URL}/api/stats`, {
+    method: "GET",
+    headers: getAuthHeaders(),
+  });
 
   if (!res.ok) {
-    throw new Error("Error obteniendo stats");
+    throw new Error(`No se pudieron obtener stats (${res.status})`);
   }
 
-  const data = await res.json();
-  return data.data;
+  const json = await res.json();
+  return json.data ?? [];
 }

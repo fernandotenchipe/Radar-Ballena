@@ -111,13 +111,6 @@ export default function LoginForm() {
               )}
             </button>
           </form>
-
-          {/* Demo info */}
-          <div className="mt-6 rounded-lg bg-[#06b6d4]/10 border border-[#06b6d4]/30 p-3">
-            <p className="text-xs text-[var(--color-text-secondary)]">
-              <span className="font-semibold text-[#06b6d4]">Prueba:</span> Usa cualquier email y contraseña
-            </p>
-          </div>
         </div>
 
         {/* Footer */}

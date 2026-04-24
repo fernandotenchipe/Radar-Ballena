@@ -6,7 +6,7 @@ import { useAuth } from "@/components/AuthContext";
 import DashboardLayout from "@/components/Layout";
 import { FeedChannel, WhalePerformance } from "@/components/Layout";
 import { buildDashboardData, fetchAlerts, fetchStats } from "@/lib/alerts";
-import { translate } from "@/lib/translate";
+import { translateAlerts } from "@/lib/translate";
 import { WHALE_NAMES_ES } from "@/lib/whales";
 import { translateAnswer } from "@/lib/format";
 
@@ -38,38 +38,49 @@ export default function Home() {
         ]);
 
         const data = buildDashboardData(apiAlerts);
+        const flatAlerts = data.channels.flatMap((channel) => channel.alerts);
+        const translations = await translateAlerts(
+          flatAlerts.map((alert) => ({
+            id: alert.id,
+            whaleName: alert.trader,
+            marketTitle: alert.question,
+            answer: alert.outcome,
+          })),
+        );
+
+        const translationsById = new Map(
+          translations
+            .filter((item) => typeof item.id === "string" && item.id.length > 0)
+            .map((item) => [item.id, item]),
+        );
 
         // Translate channel alerts' questions and map whale display names + answers
-        const translatedChannels: FeedChannel[] = await Promise.all(
-          data.channels.map(async (channel) => {
-            const alerts = await Promise.all(
-              channel.alerts.map(async (alert) => {
-                const translatedQuestion = await translate(alert.question);
+        const translatedChannels: FeedChannel[] = data.channels.map((channel) => {
+          const alerts = channel.alerts.map((alert) => {
+            const translated = translationsById.get(alert.id);
 
-                // Try a few candidate keys to find a spanish display name in WHALE_NAMES_ES
-                const candidates = [
-                  alert.trader,
-                  alert.trader?.toLowerCase().replace(/\s+/g, "_"),
-                  alert.trader?.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
-                ];
+            // Try a few candidate keys to find a spanish display name in WHALE_NAMES_ES
+            const candidates = [
+              alert.trader,
+              alert.trader?.toLowerCase().replace(/\s+/g, "_"),
+              alert.trader?.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+            ];
 
-                const foundKey = candidates.find((c) => c && WHALE_NAMES_ES[c as string]);
-                const whaleName = foundKey ? WHALE_NAMES_ES[foundKey as string] : alert.trader;
+            const foundKey = candidates.find((c) => c && WHALE_NAMES_ES[c as string]);
+            const whaleName = foundKey ? WHALE_NAMES_ES[foundKey as string] : alert.trader;
 
-                const outcome = translateAnswer(alert.outcome);
+            const outcome = translated?.answerEs || translateAnswer(alert.outcome);
 
-                return {
-                  ...alert,
-                  trader: whaleName ?? alert.trader,
-                  outcome,
-                  question: translatedQuestion || alert.question,
-                };
-              }),
-            );
+            return {
+              ...alert,
+              trader: translated?.whaleNameEs || whaleName || alert.trader,
+              outcome,
+              question: translated?.marketTitleEs || alert.question,
+            };
+          });
 
-            return { ...channel, alerts };
-          }),
-        );
+          return { ...channel, alerts };
+        });
 
         const whalePerformance = stats.map((w: {
           whaleId: string;

@@ -32,15 +32,17 @@ export default function LoginForm() {
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-main)] px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <Image
-            src="/radarballena-logo.png"
-            alt="RadarBallena"
-            width={220}
-            height={50}
-            priority
-            className="h-auto w-auto"
-          />
+        <div className="mb-8 flex justify-center">
+          <div className="login-logo-wrapper">
+            <Image
+              src="/radarballena-logo.png"
+              alt="RadarBallena"
+              width={220}
+              height={50}
+              priority
+              className="login-logo-image h-auto w-auto"
+            />
+          </div>
         </div>
 
         {/* Card de login */}

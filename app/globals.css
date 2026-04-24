@@ -80,3 +80,31 @@ h6 {
   background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.5), transparent);
   pointer-events: none;
 }
+
+:root {
+  --login-logo-bg: rgba(255, 255, 255, 0.86);
+  --login-logo-border: rgba(11, 28, 61, 0.1);
+  --login-logo-filter: none;
+}
+
+[data-theme="dark"] {
+  --login-logo-bg: rgba(255, 255, 255, 0.08);
+  --login-logo-border: rgba(148, 163, 184, 0.3);
+  --login-logo-filter: brightness(1.65) saturate(1.15)
+    drop-shadow(0 0 10px rgba(6, 182, 212, 0.28));
+}
+
+.login-logo-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px solid var(--login-logo-border);
+  background: var(--login-logo-bg);
+  padding: 0.75rem 1rem;
+  backdrop-filter: blur(4px);
+}
+
+.login-logo-image {
+  filter: var(--login-logo-filter);
+}

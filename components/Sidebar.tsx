@@ -19,14 +19,16 @@ export default function Sidebar({ channels, selectedChannelId, onSelectChannel }
   return (
     <aside className="flex h-full w-full max-w-[250px] flex-col border-r border-[var(--color-border)] bg-[var(--color-bg-sidebar)]">
       <div className="border-b border-[var(--color-border)] px-5 py-4">
-        <Image
-          src="/radarballena-logo.png"
-          alt="RadarBallena"
-          width={190}
-          height={44}
-          priority
-          className="h-auto w-auto max-w-full"
-        />
+        <div className="login-logo-wrapper w-fit">
+          <Image
+            src="/radarballena-logo.png"
+            alt="RadarBallena"
+            width={190}
+            height={44}
+            priority
+            className="login-logo-image h-auto w-auto max-w-full"
+          />
+        </div>
         <span className="mt-3 inline-flex rounded-full bg-[#10b981]/15 px-3 py-1 text-xs font-semibold text-[#10b981]">
           En vivo
         </span>

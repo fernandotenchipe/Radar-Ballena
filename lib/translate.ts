@@ -19,21 +19,25 @@ export async function translateAlerts(
     return [];
   }
 
-  const res = await fetch("/api/translate-alerts", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ items }),
-  });
+  try {
+    const res = await fetch("/api/translate-alerts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ items }),
+    });
 
-  if (!res.ok) {
-    throw new Error("No se pudieron traducir las alertas");
+    if (!res.ok) {
+      return [];
+    }
+
+    const data = (await res.json()) as {
+      translations?: AlertTranslationResult[];
+    };
+
+    return Array.isArray(data.translations) ? data.translations : [];
+  } catch {
+    return [];
   }
-
-  const data = (await res.json()) as {
-    translations?: AlertTranslationResult[];
-  };
-
-  return Array.isArray(data.translations) ? data.translations : [];
 }

@@ -4,6 +4,7 @@ import AlertCard, { AlertItem } from "@/components/AlertCard";
 import Sidebar, { SidebarChannel } from "@/components/Sidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/components/AuthContext";
+import { translateWhaleName } from "@/lib/translateWhaleName";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
@@ -21,19 +22,6 @@ export type WhalePerformance = {
   losses: number;
   winRate: number;
 };
-
-const WHALE_NAME_ES: Record<string, string> = {
-  "Global Sports Arb Lambda": "Arbitraje Deportivo Global Lambda",
-  "NBA Volume Trader Theta": "Operador de Volumen NBA Theta",
-  "Everything Trader Zeta": "Trader Todoterreno Zeta",
-  "Everything Trader Delta": "Trader Todoterreno Delta",
-  "Geopolitical Macro Omega": "Macro Geopolitico Omega",
-  "Soccer Esports Titan Alpha": "Titan del Futbol Esports Alpha",
-};
-
-function translateWhaleName(name: string) {
-  return WHALE_NAME_ES[name] ?? name;
-}
 
 type DashboardLayoutProps = {
   channels: FeedChannel[];
@@ -233,7 +221,7 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
               <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="text-lg font-semibold text-[var(--color-text-primary)]">
-                    Win vs Loss por ballena
+                    Victorias vs Derrotas por ballena
                   </h2>
                 </div>
 
@@ -249,9 +237,9 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                         className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-main)] p-3 transition-all hover:border-[var(--color-accent)]/40"
                       >
                         <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                            {whale.whaleName}
-                          </p>
+                          <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                            {translateWhaleName(whale.whaleName)}
+                          </h3>
                           <p className="text-xs text-[var(--color-text-secondary)]">
                             Win {winRate}% / Loss {lossRate}%
                           </p>
@@ -266,10 +254,10 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
 
                         <div className="mt-2 flex items-center justify-between text-xs text-[var(--color-text-secondary)]">
                           <span>
-                            Wins: <span className="font-semibold text-[#10b981]">{whale.wins}</span>
+                            Victorias: <span className="font-semibold text-[#10b981]">{whale.wins}</span>
                           </span>
                           <span>
-                            Losses: <span className="font-semibold text-[#ef4444]">{whale.losses}</span>
+                            Derrotas: <span className="font-semibold text-[#ef4444]">{whale.losses}</span>
                           </span>
                         </div>
                       </article>

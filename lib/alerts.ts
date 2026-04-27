@@ -18,6 +18,13 @@ export type ApiAlert = {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+const WHALE_IDS = [
+  "sports_arb",
+  "nba_volume",
+  "global_trader",
+  "sports_esports_titan",
+];
+
 function getAuthHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined"
@@ -116,22 +123,28 @@ export async function fetchAlerts(): Promise<ApiAlert[]> {
     throw new Error("NEXT_PUBLIC_API_URL no está configurada");
   }
 
-  const params = new URLSearchParams({
-    includeHistory: "true",
-    limit: "500",
-  });
+  const responses = await Promise.all(
+    WHALE_IDS.map(async (whaleId) => {
+      const params = new URLSearchParams({
+        whale: whaleId,
+        limit: "100",
+      });
 
-  const res = await fetch(`${API_URL}/api/alerts?${params.toString()}`, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
+      const res = await fetch(`${API_URL}/api/alerts?${params.toString()}`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+      });
 
-  if (!res.ok) {
-    throw new Error(`No se pudieron obtener alerts (${res.status})`);
-  }
+      if (!res.ok) {
+        throw new Error(`No se pudieron obtener alerts para ${whaleId} (${res.status})`);
+      }
 
-  const json = await res.json();
-  return (json.data ?? []) as ApiAlert[];
+      const json = (await res.json()) as { data?: ApiAlert[] };
+      return json.data ?? [];
+    }),
+  );
+
+  return responses.flat();
 }
 
 export function buildDashboardData(apiAlerts: ApiAlert[]): {

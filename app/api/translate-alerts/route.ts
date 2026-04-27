@@ -31,8 +31,8 @@ type AITranslation = {
   answerEs?: string;
 };
 
-const MAX_ITEMS = 50;
-const TIMEOUT_MS = 12_000;
+const MAX_ITEMS = 15;
+const TIMEOUT_MS = 2_500;
 const MAX_CACHE_SIZE = 3000;
 
 const globalCache = globalThis as typeof globalThis & {

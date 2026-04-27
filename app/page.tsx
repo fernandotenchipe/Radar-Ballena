@@ -44,7 +44,6 @@ export default function Home() {
           { id: "sports_arb", name: "Global Sports Arb Lambda" },
           { id: "nba_volume", name: "NBA Volume Trader Theta" },
           { id: "global_trader", name: "Everything Trader Zeta" },
-          { id: "global_trader_delta", name: "Everything Trader Delta" },
           { id: "sports_esports_titan", name: "Soccer Esports Titan Alpha" },
         ];
 
@@ -60,7 +59,7 @@ export default function Home() {
             alerts: existing?.alerts ?? [],
           };
         });
-        const flatAlerts = data.channels.flatMap((channel) => channel.alerts);
+        const flatAlerts = mergedChannels.flatMap((channel) => channel.alerts);
         const visibleAlerts = flatAlerts.filter((alert) => !alert.isHistory);
         const itemsToTranslate = visibleAlerts.slice(0, 8).map((alert) => ({
           id: alert.id,
@@ -110,13 +109,9 @@ export default function Home() {
           };
         });
 
-        // Ensure all configured whales appear in the performance list,
-        // even if `stats` doesn't include them (zero values).
-        const configMap = new Map(
-          WHALE_CHANNEL_CONFIGS.map((c) => [c.id, c]),
-        );
-
-        const perfMap = new Map<string, {
+        // Build whale performance from stats grouped by whaleId.
+        const configMap = new Map(WHALE_CHANNEL_CONFIGS.map((c) => [c.id, c]));
+        const statsByWhaleId = new Map<string, {
           id: string;
           whaleName: string;
           wins: number;
@@ -124,18 +119,6 @@ export default function Home() {
           winRate: number;
         }>();
 
-        // Seed with configured whales (zeroed)
-        for (const cfg of WHALE_CHANNEL_CONFIGS) {
-          perfMap.set(cfg.id, {
-            id: cfg.id,
-            whaleName: cfg.displayName ?? translateWhaleName(cfg.name),
-            wins: 0,
-            losses: 0,
-            winRate: 0,
-          });
-        }
-
-        // Overlay server stats (replace seeded values if present)
         for (const w of stats as Array<{
           whaleId?: string;
           whaleName?: string;
@@ -143,9 +126,6 @@ export default function Home() {
           losses?: number;
           winRate?: number;
         }>) {
-          // Resolve an authoritative id for the stat row:
-          // prefer explicit whaleId; fall back to CHANNEL_TO_WHALE_ID mapping by whaleName;
-          // otherwise, derive a slug-like id from the whaleName.
           let id = w.whaleId;
           const rawName = w.whaleName ?? "";
 
@@ -165,25 +145,22 @@ export default function Home() {
           const displayFromConfig = configMap.get(id)?.displayName;
           const displayName = displayFromConfig ?? translateWhaleName(rawName) ?? rawName;
 
-          perfMap.set(id, {
+          const current = statsByWhaleId.get(id);
+          const nextWins = (current?.wins ?? 0) + (w.wins ?? 0);
+          const nextLosses = (current?.losses ?? 0) + (w.losses ?? 0);
+          const total = nextWins + nextLosses;
+          const nextWinRate = total > 0 ? Math.round((nextWins / total) * 100) : 0;
+
+          statsByWhaleId.set(id, {
             id,
             whaleName: displayName,
-            wins: w.wins ?? 0,
-            losses: w.losses ?? 0,
-            winRate: w.winRate ?? 0,
+            wins: nextWins,
+            losses: nextLosses,
+            winRate: nextWinRate,
           });
         }
 
-        // Order whale performance to match mergedChannels so the UI can align by index.
-        const whalePerformance = mergedChannels.map((c) =>
-          perfMap.get(c.id) ?? {
-            id: c.id,
-            whaleName: translateWhaleName(c.name),
-            wins: 0,
-            losses: 0,
-            winRate: 0,
-          },
-        );
+        const whalePerformance = Array.from(statsByWhaleId.values());
 
         if (!isMounted) {
           return;

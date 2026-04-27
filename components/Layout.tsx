@@ -69,8 +69,13 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
 
   const unlockedSidebarChannels = sidebarChannels.filter((channel) => channel.isSubscribed);
 
-  const channelPreview = channels.map((channel, index) => {
-    const performance = whalePerformance[index];
+  const performanceById = useMemo(
+    () => new Map(whalePerformance.map((item) => [item.id, item])),
+    [whalePerformance],
+  );
+
+  const channelPreview = channels.map((channel) => {
+    const performance = performanceById.get(channel.id);
     const wins = performance?.wins ?? 0;
     const losses = performance?.losses ?? 0;
     const total = wins + losses;

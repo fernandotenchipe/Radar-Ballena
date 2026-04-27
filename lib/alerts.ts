@@ -1,7 +1,10 @@
 import { AlertItem } from "@/components/AlertCard";
 import { FeedChannel, WhalePerformance } from "@/components/Layout";
+import { CHANNEL_TO_WHALE_ID } from "@/lib/whales";
 
 export type ApiAlert = {
+  whaleId?: string;
+  whale_id?: string;
   whaleName: string;
   action: "BUY" | "SELL";
   answer?: string;
@@ -90,12 +93,34 @@ function createChannelId(value?: string): string {
   return normalized.length > 0 ? normalized : "whale";
 }
 
+function resolveWhaleId(alert: ApiAlert): string {
+  const directId = (alert.whaleId ?? alert.whale_id ?? "").trim();
+  if (directId.length > 0) {
+    return directId;
+  }
+
+  const name = (alert.whaleName ?? "").trim();
+  if (name.length > 0) {
+    const mapped = CHANNEL_TO_WHALE_ID[name] ?? CHANNEL_TO_WHALE_ID[name.trim()];
+    if (mapped) {
+      return mapped;
+    }
+  }
+
+  return createChannelId(name).replace(/-/g, "_");
+}
+
 export async function fetchAlerts(): Promise<ApiAlert[]> {
   if (!API_URL) {
     throw new Error("NEXT_PUBLIC_API_URL no está configurada");
   }
 
-  const res = await fetch(`${API_URL}/api/alerts`, {
+  const params = new URLSearchParams({
+    includeHistory: "true",
+    limit: "500",
+  });
+
+  const res = await fetch(`${API_URL}/api/alerts?${params.toString()}`, {
     method: "GET",
     headers: getAuthHeaders(),
   });
@@ -116,14 +141,15 @@ export function buildDashboardData(apiAlerts: ApiAlert[]): {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
   );
 
-  const groupedAlerts = new Map<string, AlertItem[]>();
+  const groupedAlerts = new Map<string, { name: string; alerts: AlertItem[] }>();
 
   sortedAlerts.forEach((apiAlert, index) => {
+    const whaleId = resolveWhaleId(apiAlert);
     const trader = apiAlert.whaleName ?? "Unknown Whale";
     const question = apiAlert.marketTitle;
 
     const normalizedAlert: AlertItem = {
-      id: `${trader}-${apiAlert.createdAt}-${index}`,
+      id: `${whaleId}-${apiAlert.createdAt}-${index}`,
       category: trader,
       trader,
       question,
@@ -135,21 +161,21 @@ export function buildDashboardData(apiAlerts: ApiAlert[]): {
       timestamp: formatTimestamp(apiAlert.createdAt),
     };
 
-    const current = groupedAlerts.get(trader);
+    const current = groupedAlerts.get(whaleId);
 
     if (current) {
-      current.push(normalizedAlert);
+      current.alerts.push(normalizedAlert);
       return;
     }
 
-    groupedAlerts.set(trader, [normalizedAlert]);
+    groupedAlerts.set(whaleId, { name: trader, alerts: [normalizedAlert] });
   });
 
   const channels: FeedChannel[] = Array.from(groupedAlerts.entries()).map(
-    ([name, alerts], index) => ({
-      id: `${createChannelId(name)}-${index}`,
-      name,
-      alerts,
+    ([whaleId, entry], index) => ({
+      id: whaleId,
+      name: entry.name,
+      alerts: entry.alerts,
       isSubscribedByDefault: index === 0,
     }),
   );

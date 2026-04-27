@@ -9,6 +9,7 @@ import { buildDashboardData, fetchAlerts, fetchStats } from "@/lib/alerts";
 import { translateAlerts } from "@/lib/translate";
 import { translateAnswer } from "@/lib/format";
 import { translateWhaleName } from "@/lib/translateWhaleName";
+import { WHALE_CHANNEL_CONFIGS, CHANNEL_TO_WHALE_ID } from "@/lib/whales";
 
 export default function Home() {
   const { isAuthenticated } = useAuth();
@@ -38,6 +39,27 @@ export default function Home() {
         ]);
 
         const data = buildDashboardData(apiAlerts);
+
+        const BASE_CHANNELS = [
+          { id: "sports_arb", name: "Global Sports Arb Lambda" },
+          { id: "nba_volume", name: "NBA Volume Trader Theta" },
+          { id: "global_trader", name: "Everything Trader Zeta" },
+          { id: "global_trader_delta", name: "Everything Trader Delta" },
+          { id: "sports_esports_titan", name: "Soccer Esports Titan Alpha" },
+        ];
+
+        const channelsById = new Map(data.channels.map((channel) => [channel.id, channel]));
+
+        const mergedChannels = BASE_CHANNELS.map((base) => {
+          const existing = channelsById.get(base.id);
+
+          return {
+            ...(existing ?? {}),
+            id: base.id,
+            name: base.name,
+            alerts: existing?.alerts ?? [],
+          };
+        });
         const flatAlerts = data.channels.flatMap((channel) => channel.alerts);
         const visibleAlerts = flatAlerts.filter((alert) => !alert.isHistory);
         const itemsToTranslate = visibleAlerts.slice(0, 8).map((alert) => ({
@@ -61,11 +83,11 @@ export default function Home() {
         );
 
         const whaleNameMap = new Map(
-          data.channels.map((channel) => [channel.name, translateWhaleName(channel.name)]),
+          mergedChannels.map((channel) => [channel.name, translateWhaleName(channel.name)]),
         );
 
         // Translate channel alerts' questions and map whale display names + answers
-        const translatedChannels: FeedChannel[] = data.channels.map((channel) => {
+        const translatedChannels: FeedChannel[] = mergedChannels.map((channel) => {
           const alerts = channel.alerts.map((alert) => {
             const translated = translationsById.get(alert.id);
             const localWhaleName =
@@ -88,19 +110,80 @@ export default function Home() {
           };
         });
 
-        const whalePerformance = stats.map((w: {
-          whaleId: string;
+        // Ensure all configured whales appear in the performance list,
+        // even if `stats` doesn't include them (zero values).
+        const configMap = new Map(
+          WHALE_CHANNEL_CONFIGS.map((c) => [c.id, c]),
+        );
+
+        const perfMap = new Map<string, {
+          id: string;
           whaleName: string;
           wins: number;
           losses: number;
           winRate: number;
-        }) => ({
-          id: w.whaleId,
-          whaleName: w.whaleName,
-          wins: w.wins,
-          losses: w.losses,
-          winRate: w.winRate,
-        }));
+        }>();
+
+        // Seed with configured whales (zeroed)
+        for (const cfg of WHALE_CHANNEL_CONFIGS) {
+          perfMap.set(cfg.id, {
+            id: cfg.id,
+            whaleName: cfg.displayName ?? translateWhaleName(cfg.name),
+            wins: 0,
+            losses: 0,
+            winRate: 0,
+          });
+        }
+
+        // Overlay server stats (replace seeded values if present)
+        for (const w of stats as Array<{
+          whaleId?: string;
+          whaleName?: string;
+          wins?: number;
+          losses?: number;
+          winRate?: number;
+        }>) {
+          // Resolve an authoritative id for the stat row:
+          // prefer explicit whaleId; fall back to CHANNEL_TO_WHALE_ID mapping by whaleName;
+          // otherwise, derive a slug-like id from the whaleName.
+          let id = w.whaleId;
+          const rawName = w.whaleName ?? "";
+
+          if (!id && rawName) {
+            id = CHANNEL_TO_WHALE_ID[rawName] ?? CHANNEL_TO_WHALE_ID[rawName.trim()];
+          }
+
+          if (!id && rawName) {
+            id = rawName
+              .toLowerCase()
+              .replace(/[^a-z0-9]+/g, "_")
+              .replace(/^_+|_+$/g, "");
+          }
+
+          if (!id) continue;
+
+          const displayFromConfig = configMap.get(id)?.displayName;
+          const displayName = displayFromConfig ?? translateWhaleName(rawName) ?? rawName;
+
+          perfMap.set(id, {
+            id,
+            whaleName: displayName,
+            wins: w.wins ?? 0,
+            losses: w.losses ?? 0,
+            winRate: w.winRate ?? 0,
+          });
+        }
+
+        // Order whale performance to match mergedChannels so the UI can align by index.
+        const whalePerformance = mergedChannels.map((c) =>
+          perfMap.get(c.id) ?? {
+            id: c.id,
+            whaleName: translateWhaleName(c.name),
+            wins: 0,
+            losses: 0,
+            winRate: 0,
+          },
+        );
 
         if (!isMounted) {
           return;

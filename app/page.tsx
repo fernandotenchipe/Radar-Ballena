@@ -40,6 +40,18 @@ export default function Home() {
 
         const data = buildDashboardData(apiAlerts);
 
+        console.log(
+          "sports_esports_titan alerts:",
+          apiAlerts.filter((a) =>
+            a.whaleId === "sports_esports_titan" ||
+            a.whale_id === "sports_esports_titan" ||
+            a.whaleName === "Soccer Esports Titan Alpha" ||
+            a.whale_name === "Soccer Esports Titan Alpha",
+          ),
+        );
+
+        console.log("dashboard channels:", data.channels);
+
         const BASE_CHANNELS = [
           { id: "sports_arb", name: "Global Sports Arb Lambda" },
           { id: "nba_volume", name: "NBA Volume Trader Theta" },
@@ -47,10 +59,20 @@ export default function Home() {
           { id: "sports_esports_titan", name: "Soccer Esports Titan Alpha" },
         ];
 
-        const channelsById = new Map(data.channels.map((channel) => [channel.id, channel]));
+        function getChannelWhaleId(channel: FeedChannel) {
+          return (
+            CHANNEL_TO_WHALE_ID[channel.id] ||
+            CHANNEL_TO_WHALE_ID[channel.name] ||
+            channel.id
+          );
+        }
+
+        const channelsByWhaleId = new Map(
+          data.channels.map((channel) => [getChannelWhaleId(channel), channel]),
+        );
 
         const mergedChannels = BASE_CHANNELS.map((base) => {
-          const existing = channelsById.get(base.id);
+          const existing = channelsByWhaleId.get(base.id);
 
           return {
             ...(existing ?? {}),

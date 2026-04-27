@@ -5,6 +5,7 @@ import { CHANNEL_TO_WHALE_ID } from "@/lib/whales";
 export type ApiAlert = {
   whaleId?: string;
   whale_id?: string;
+  whale_name?: string;
   whaleName: string;
   action: "BUY" | "SELL";
   answer?: string;

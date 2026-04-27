@@ -19,7 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const SESSION_KEY = "radar_session";
 const LAST_ACTIVITY_KEY = "radar_last_activity";
-const INACTIVITY_LIMIT_MS = 30 * 60 * 1000;
+const INACTIVITY_LIMIT_MS = 2 * 60 * 60 * 1000;
 
 const TOKEN_KEY = "rb-token";
 const USER_KEY = "rb-user";
@@ -39,14 +39,14 @@ function getInitialAuthState(): {
     };
   }
 
-  const session = window.sessionStorage.getItem(SESSION_KEY);
-  const lastActivity = Number(window.sessionStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+  const session = window.localStorage.getItem(SESSION_KEY);
+  const lastActivity = Number(window.localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
 
   if (session !== "true" || !lastActivity || Date.now() - lastActivity > INACTIVITY_LIMIT_MS) {
-    window.sessionStorage.removeItem(SESSION_KEY);
-    window.sessionStorage.removeItem(LAST_ACTIVITY_KEY);
-    window.sessionStorage.removeItem(TOKEN_KEY);
-    window.sessionStorage.removeItem(USER_KEY);
+    window.localStorage.removeItem(SESSION_KEY);
+    window.localStorage.removeItem(LAST_ACTIVITY_KEY);
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(USER_KEY);
 
     return {
       isAuthenticated: false,
@@ -55,8 +55,8 @@ function getInitialAuthState(): {
     };
   }
 
-  const savedToken = window.sessionStorage.getItem(TOKEN_KEY);
-  const savedUser = window.sessionStorage.getItem(USER_KEY);
+  const savedToken = window.localStorage.getItem(TOKEN_KEY);
+  const savedUser = window.localStorage.getItem(USER_KEY);
 
   if (!savedToken || !savedUser) {
     return {
@@ -79,10 +79,10 @@ function getInitialAuthState(): {
       token: savedToken,
     };
   } catch {
-    window.sessionStorage.removeItem(SESSION_KEY);
-    window.sessionStorage.removeItem(LAST_ACTIVITY_KEY);
-    window.sessionStorage.removeItem(TOKEN_KEY);
-    window.sessionStorage.removeItem(USER_KEY);
+    window.localStorage.removeItem(SESSION_KEY);
+    window.localStorage.removeItem(LAST_ACTIVITY_KEY);
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(USER_KEY);
 
     return {
       isAuthenticated: false,
@@ -103,21 +103,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setIsAuthenticated(false);
 
-    window.sessionStorage.removeItem(SESSION_KEY);
-    window.sessionStorage.removeItem(LAST_ACTIVITY_KEY);
-    window.sessionStorage.removeItem(TOKEN_KEY);
-    window.sessionStorage.removeItem(USER_KEY);
+    window.localStorage.removeItem(SESSION_KEY);
+    window.localStorage.removeItem(LAST_ACTIVITY_KEY);
+    window.localStorage.removeItem(TOKEN_KEY);
+    window.localStorage.removeItem(USER_KEY);
   }, []);
 
   const refreshActivity = useCallback(() => {
-    if (window.sessionStorage.getItem(SESSION_KEY) === "true") {
-      window.sessionStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    if (window.localStorage.getItem(SESSION_KEY) === "true") {
+      window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
     }
   }, []);
 
   const checkSession = useCallback(() => {
-    const session = window.sessionStorage.getItem(SESSION_KEY);
-    const lastActivity = Number(window.sessionStorage.getItem(LAST_ACTIVITY_KEY) || 0);
+    const session = window.localStorage.getItem(SESSION_KEY);
+    const lastActivity = Number(window.localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
 
     if (session !== "true") {
       setIsAuthenticated(false);
@@ -166,10 +166,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(userData);
     setIsAuthenticated(true);
 
-    window.sessionStorage.setItem(SESSION_KEY, "true");
-    window.sessionStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-    window.sessionStorage.setItem(TOKEN_KEY, jwt);
-    window.sessionStorage.setItem(USER_KEY, JSON.stringify(userData));
+    window.localStorage.setItem(SESSION_KEY, "true");
+    window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    window.localStorage.setItem(TOKEN_KEY, jwt);
+    window.localStorage.setItem(USER_KEY, JSON.stringify(userData));
   };
 
   useEffect(() => {

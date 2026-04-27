@@ -59,16 +59,15 @@ Reglas:
 - Si es macro/geopolítico, dale tono financiero/geopolítico.
 - Si es volumen/trading, dale tono de trader profesional.
 Ejemplos:
-"NBA Volume Trader Theta" -> "Theta, Operador de Volumen NBA"
-"Geopolitical Macro Omega" -> "Omega Macro Geopolítico"
+"NBA Volume Trader Theta" -> " Operador de Volumen NBA"
+"Geopolitical Macro Omega" -> "Macro Geopolítico"
 "Sports Grinder" -> "El Grinder Deportivo"
-"Soccer Esports Titan Alpha" -> "Alpha, Titán del Fútbol Esports"
+"Soccer Esports Titan Alpha" -> " Titán del Fútbol Esports"
 "Everything Trader" -> "Trader Todoterreno"
 "Global Sports" -> "Radar Deportivo Global"
-"Sports Arb" -> "Arbitrajista Deportivo"
+"Sports Arb" -> "Arbitraje Deportivo"
 Ejemplos de marketTitle:
 "Knicks vs. Hawks: O/U 214.5" -> "Knicks vs. Hawks: Más/Menos de 214.5"
-"Spread: Nuggets (-2.5)" -> "Hándicap: Nuggets (-2.5)"
 "Will Bitcoin hit $100k in May?" -> "¿Bitcoin alcanzará los $100k en mayo?"
 Devuelve exactamente:
 {

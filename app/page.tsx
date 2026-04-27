@@ -8,19 +8,7 @@ import { FeedChannel, WhalePerformance } from "@/components/Layout";
 import { buildDashboardData, fetchAlerts, fetchStats } from "@/lib/alerts";
 import { translateAlerts } from "@/lib/translate";
 import { translateAnswer } from "@/lib/format";
-
-const WHALE_NAME_ES: Record<string, string> = {
-  "Global Sports Arb Lambda": "Arbitraje Deportivo Global Lambda",
-  "NBA Volume Trader Theta": "Operador de Volumen NBA Theta",
-  "Everything Trader Zeta": "Trader Todoterreno Zeta",
-  "Everything Trader Delta": "Trader Todoterreno Delta",
-  "Geopolitical Macro Omega": "Macro Geopolitico Omega",
-  "Soccer Esports Titan Alpha": "Titan del Futbol Esports Alpha",
-};
-
-function translateWhaleName(name: string) {
-  return WHALE_NAME_ES[name] ?? name;
-}
+import { translateWhaleName } from "@/lib/translateWhaleName";
 
 export default function Home() {
   const { isAuthenticated } = useAuth();

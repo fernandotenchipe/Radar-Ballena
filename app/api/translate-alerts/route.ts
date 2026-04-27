@@ -104,7 +104,7 @@ const exactWhales: Record<string, string> = {
   "everything trader zeta": "Trader Todoterreno ",
   "everything trader delta": "Trader Todoterreno ",
   "geopolitical macro omega": "Macro Geopolitico ",
-  "soccer esports titan alpha": "Titan del Futbol Esports ",
+  "soccer esports titan alpha": "Titán del Fútbol Esports Alpha",
   "sports grinder": "Grinder Deportivo",
 };
 
@@ -121,7 +121,7 @@ function whaleNameFallback(name = ""): string {
   out = out.replace(/\bNBA Volume Trader\b/gi, "Operador de Volumen NBA");
   out = out.replace(/\bEverything Trader\b/gi, "Trader Todoterreno");
   out = out.replace(/\bGeopolitical Macro\b/gi, "Macro Geopolitico");
-  out = out.replace(/\bSoccer Esports Titan\b/gi, "Titan del Futbol Esports");
+  out = out.replace(/\bSoccer Esports Titan\b/gi, "Titán del Fútbol Esports");
   out = out.replace(/\bSports Esports Titan\b/gi, "Titan Deportivo Esports");
   out = out.replace(/\bSports Grinder\b/gi, "El Grinder Deportivo");
   out = out.replace(/\bSports Arb\b/gi, "Arbitraje Deportivo");

@@ -39,14 +39,21 @@ export default function Home() {
 
         const data = buildDashboardData(apiAlerts);
         const flatAlerts = data.channels.flatMap((channel) => channel.alerts);
-        const translations = await translateAlerts(
-          flatAlerts.map((alert) => ({
-            id: alert.id,
-            whaleName: alert.trader,
-            marketTitle: alert.question,
-            answer: alert.outcome,
-          })),
-        );
+        let translations: Awaited<ReturnType<typeof translateAlerts>> = [];
+
+        try {
+          translations = await translateAlerts(
+            flatAlerts.slice(0, 30).map((alert) => ({
+              id: alert.id,
+              whaleName: alert.trader,
+              marketTitle: alert.question,
+              answer: alert.outcome,
+            })),
+          );
+        } catch (error) {
+          console.error("Translation failed:", error);
+          translations = [];
+        }
 
         const translationsById = new Map(
           translations

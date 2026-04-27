@@ -72,11 +72,16 @@ export default function Home() {
             .map((item) => [item.id, item]),
         );
 
+        const whaleNameMap = new Map(
+          data.channels.map((channel) => [channel.name, translateWhaleName(channel.name)]),
+        );
+
         // Translate channel alerts' questions and map whale display names + answers
         const translatedChannels: FeedChannel[] = data.channels.map((channel) => {
           const alerts = channel.alerts.map((alert) => {
             const translated = translationsById.get(alert.id);
-            const localWhaleName = translateWhaleName(alert.trader);
+            const localWhaleName =
+              whaleNameMap.get(alert.trader) ?? translateWhaleName(alert.trader);
 
             const outcome = translated?.answerEs || translateAnswer(alert.outcome);
 
@@ -90,7 +95,7 @@ export default function Home() {
 
           return {
             ...channel,
-            name: channel.name,
+            name: whaleNameMap.get(channel.name) ?? channel.name,
             alerts,
           };
         });

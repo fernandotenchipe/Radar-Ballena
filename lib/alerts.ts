@@ -28,7 +28,7 @@ const WHALE_IDS = [
 function getAuthHeaders(): Record<string, string> {
   const token =
     typeof window !== "undefined"
-      ? window.localStorage.getItem("rb-token")
+      ? window.sessionStorage.getItem("rb-token")
       : null;
 
   return {

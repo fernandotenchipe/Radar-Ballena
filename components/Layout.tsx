@@ -8,6 +8,8 @@ import { translateWhaleName } from "@/lib/translateWhaleName";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+const ALERTS_PER_PAGE = 6;
+
 export type FeedChannel = {
   id: string;
   name: string;
@@ -31,6 +33,7 @@ type DashboardLayoutProps = {
 export default function DashboardLayout({ channels, whalePerformance }: DashboardLayoutProps) {
   const [activeView, setActiveView] = useState<"panel" | "channel">("panel");
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
+  const [channelPage, setChannelPage] = useState<number>(1);
   const [subscribedIds, setSubscribedIds] = useState<Set<string>>(
     () =>
       new Set(
@@ -48,13 +51,15 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
   const selectedChannel =
     channels.find((channel) => channel.id === selectedChannelId) ?? null;
 
+  const selectedChannelAlerts = selectedChannel?.alerts ?? [];
+  const totalPages = Math.max(1, Math.ceil(selectedChannelAlerts.length / ALERTS_PER_PAGE));
+  const currentPage = channelPage > totalPages ? totalPages : channelPage;
+  const pageStart = (currentPage - 1) * ALERTS_PER_PAGE;
+  const pagedAlerts = selectedChannelAlerts.slice(pageStart, pageStart + ALERTS_PER_PAGE);
+
   const isSubscribed = selectedChannel ? subscribedIds.has(selectedChannel.id) : false;
-  const liveAlerts = selectedChannel
-    ? selectedChannel.alerts.filter((alert) => !alert.isHistory)
-    : [];
-  const historyAlerts = selectedChannel
-    ? selectedChannel.alerts.filter((alert) => alert.isHistory)
-    : [];
+  const liveAlerts = pagedAlerts.filter((alert) => !alert.isHistory);
+  const historyAlerts = pagedAlerts.filter((alert) => alert.isHistory);
 
   const sidebarChannels: SidebarChannel[] = useMemo(
     () =>
@@ -99,12 +104,14 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
 
   const openChannel = (channelId: string) => {
     setSelectedChannelId(channelId);
+    setChannelPage(1);
     setActiveView("channel");
   };
 
   const openPanel = () => {
     setActiveView("panel");
     setSelectedChannelId(null);
+    setChannelPage(1);
   };
 
   const unlockChannel = (channelId: string) => {
@@ -276,7 +283,7 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
               <header className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">
-                    {selectedChannel?.name ?? "Canal"} - {liveAlerts.length} alerts
+                    {selectedChannel?.name ?? "Canal"} - {selectedChannelAlerts.length} alerts
                   </p>
                   <h1 className="text-2xl font-semibold leading-none text-[var(--color-text-primary)]">
                     Feed del canal
@@ -335,6 +342,32 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                         {historyAlerts.map((alert) => (
                           <AlertCard key={alert.id} alert={alert} />
                         ))}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  {selectedChannelAlerts.length > ALERTS_PER_PAGE ? (
+                    <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-3">
+                      <p className="text-xs text-[var(--color-text-secondary)]">
+                        Página {currentPage} de {totalPages}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setChannelPage((p) => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Anterior
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setChannelPage((p) => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="rounded-full border border-[var(--color-border)] px-3 py-1.5 text-xs font-semibold text-[var(--color-text-primary)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Siguiente
+                        </button>
                       </div>
                     </section>
                   ) : null}

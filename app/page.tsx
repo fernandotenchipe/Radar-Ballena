@@ -39,16 +39,25 @@ export default function Home() {
 
         const data = buildDashboardData(apiAlerts);
         const flatAlerts = data.channels.flatMap((channel) => channel.alerts);
+        const channelItems = data.channels.map((channel) => ({
+          id: channel.id,
+          whaleName: channel.name,
+          marketTitle: channel.alerts[0]?.question ?? "",
+          answer: channel.alerts[0]?.outcome ?? "",
+        }));
         let translations: Awaited<ReturnType<typeof translateAlerts>> = [];
 
         try {
           translations = await translateAlerts(
-            flatAlerts.slice(0, 30).map((alert) => ({
-              id: alert.id,
-              whaleName: alert.trader,
-              marketTitle: alert.question,
-              answer: alert.outcome,
-            })),
+            [
+              ...channelItems,
+              ...flatAlerts.slice(0, 30).map((alert) => ({
+                id: alert.id,
+                whaleName: alert.trader,
+                marketTitle: alert.question,
+                answer: alert.outcome,
+              })),
+            ],
           );
         } catch (error) {
           console.error("Translation failed:", error);
@@ -63,6 +72,19 @@ export default function Home() {
 
         // Translate channel alerts' questions and map whale display names + answers
         const translatedChannels: FeedChannel[] = data.channels.map((channel) => {
+          const channelTranslation = translationsById.get(channel.id);
+          const channelNameCandidates = [
+            channel.name,
+            channel.name?.toLowerCase().replace(/\s+/g, "_"),
+            channel.name?.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+          ];
+          const channelFoundKey = channelNameCandidates.find(
+            (c) => c && WHALE_NAMES_ES[c as string],
+          );
+          const channelFallbackName = channelFoundKey
+            ? WHALE_NAMES_ES[channelFoundKey as string]
+            : channel.name;
+
           const alerts = channel.alerts.map((alert) => {
             const translated = translationsById.get(alert.id);
 
@@ -80,13 +102,21 @@ export default function Home() {
 
             return {
               ...alert,
-              trader: translated?.whaleNameEs || whaleName || alert.trader,
+              trader:
+                translated?.whaleNameEs ||
+                channelTranslation?.whaleNameEs ||
+                whaleName ||
+                alert.trader,
               outcome,
               question: translated?.marketTitleEs || alert.question,
             };
           });
 
-          return { ...channel, alerts };
+          return {
+            ...channel,
+            name: channelTranslation?.whaleNameEs || channelFallbackName || channel.name,
+            alerts,
+          };
         });
 
         const whalePerformance = stats.map((w: {

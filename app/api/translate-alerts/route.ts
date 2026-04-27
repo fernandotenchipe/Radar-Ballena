@@ -19,7 +19,6 @@ type CachedTranslation = {
 
 type AIItem = {
   key: string;
-  whaleName: string;
   marketTitle: string;
   answer: string;
 };
@@ -31,7 +30,7 @@ type AITranslation = {
   answerEs?: string;
 };
 
-const MAX_ITEMS = 15;
+const MAX_ITEMS = 8;
 const TIMEOUT_MS = 2_500;
 const MAX_CACHE_SIZE = 3000;
 
@@ -235,8 +234,6 @@ Reglas:
 - No inventes datos.
 - Conserva equipos, personas, ligas, tickers y siglas.
 - Si marketTitle esta vacio, dejalo vacio.
-- whaleName debe ser alias editorial corto, natural y potente.
-- Conserva Alpha, Beta, Theta, Omega, Lambda, Delta o Zeta si aparecen.
 - answer traducelo solo si aplica: Yes/No/Over/Under/Buy/Sell.
 - marketTitle debe sonar claro para usuario hispano.
 
@@ -245,7 +242,6 @@ Formato exacto:
   "translations": [
     {
       "key": "...",
-      "whaleNameEs": "...",
       "marketTitleEs": "...",
       "answerEs": "..."
     }
@@ -367,7 +363,6 @@ export async function POST(request: NextRequest) {
 
       uniqueForAI.push({
         key,
-        whaleName: item.whaleName ?? "",
         marketTitle: item.marketTitle ?? "",
         answer: item.answer ?? "",
       });

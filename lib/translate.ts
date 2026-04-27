@@ -1,6 +1,6 @@
 export type AlertTranslationInput = {
   id: string;
-  whaleName: string;
+  whaleName?: string;
   marketTitle: string;
   answer: string;
 };
@@ -61,7 +61,7 @@ export async function translateAlerts(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        items: missing.slice(0, 15),
+        items: missing.slice(0, 8),
       }),
     });
 

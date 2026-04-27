@@ -9,6 +9,19 @@ export type SidebarChannel = {
   isSubscribed: boolean;
 };
 
+const WHALE_NAME_ES: Record<string, string> = {
+  "Global Sports Arb Lambda": "Arbitraje Deportivo Global Lambda",
+  "NBA Volume Trader Theta": "Operador de Volumen NBA Theta",
+  "Everything Trader Zeta": "Trader Todoterreno Zeta",
+  "Everything Trader Delta": "Trader Todoterreno Delta",
+  "Geopolitical Macro Omega": "Macro Geopolitico Omega",
+  "Soccer Esports Titan Alpha": "Titan del Futbol Esports Alpha",
+};
+
+function translateWhaleName(name: string) {
+  return WHALE_NAME_ES[name] ?? name;
+}
+
 type SidebarProps = {
   channels: SidebarChannel[];
   selectedChannelId: string | null;
@@ -62,9 +75,9 @@ export default function Sidebar({ channels, selectedChannelId, onSelectChannel }
                         "cursor-pointer",
                       ].join(" ")}
                     >
-                      <span className="text-[1.02rem] font-medium text-[var(--color-text-primary)]">
-                        {channel.name}
-                      </span>
+                      <h3 className="text-[1.02rem] font-medium text-[var(--color-text-primary)]">
+                        {translateWhaleName(channel.name)}
+                      </h3>
                       <span className="text-xs tabular-nums text-[var(--color-text-secondary)]">
                         {channel.alertCount}
                       </span>

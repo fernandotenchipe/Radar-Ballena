@@ -7,7 +7,6 @@ import DashboardLayout from "@/components/Layout";
 import { FeedChannel, WhalePerformance } from "@/components/Layout";
 import { buildDashboardData, fetchAlerts, fetchStats } from "@/lib/alerts";
 import { translateAlerts } from "@/lib/translate";
-import { WHALE_NAMES_ES } from "@/lib/whales";
 import { translateAnswer } from "@/lib/format";
 
 const WHALE_NAME_ES: Record<string, string> = {
@@ -52,17 +51,16 @@ export default function Home() {
 
         const data = buildDashboardData(apiAlerts);
         const flatAlerts = data.channels.flatMap((channel) => channel.alerts);
+        const visibleAlerts = flatAlerts.filter((alert) => !alert.isHistory);
+        const itemsToTranslate = visibleAlerts.slice(0, 8).map((alert) => ({
+          id: alert.id,
+          marketTitle: alert.question,
+          answer: alert.outcome,
+        }));
         let translations: Awaited<ReturnType<typeof translateAlerts>> = [];
 
         try {
-          translations = await translateAlerts(
-            flatAlerts.slice(0, 15).map((alert) => ({
-              id: alert.id,
-              whaleName: alert.trader,
-              marketTitle: alert.question,
-              answer: alert.outcome,
-            })),
-          );
+          translations = await translateAlerts(itemsToTranslate);
         } catch (error) {
           console.error("Translation failed:", error);
           translations = [];
@@ -76,32 +74,9 @@ export default function Home() {
 
         // Translate channel alerts' questions and map whale display names + answers
         const translatedChannels: FeedChannel[] = data.channels.map((channel) => {
-          const channelNameCandidates = [
-            channel.name,
-            channel.name?.toLowerCase().replace(/\s+/g, "_"),
-            channel.name?.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
-          ];
-          const channelFoundKey = channelNameCandidates.find(
-            (c) => c && WHALE_NAMES_ES[c as string],
-          );
-          const channelFallbackName = channelFoundKey
-            ? WHALE_NAMES_ES[channelFoundKey as string]
-            : channel.name;
-          const localChannelName = translateWhaleName(channelFallbackName);
-
           const alerts = channel.alerts.map((alert) => {
             const translated = translationsById.get(alert.id);
-
-            // Try a few candidate keys to find a spanish display name in WHALE_NAMES_ES
-            const candidates = [
-              alert.trader,
-              alert.trader?.toLowerCase().replace(/\s+/g, "_"),
-              alert.trader?.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
-            ];
-
-            const foundKey = candidates.find((c) => c && WHALE_NAMES_ES[c as string]);
-            const whaleName = foundKey ? WHALE_NAMES_ES[foundKey as string] : alert.trader;
-            const localWhaleName = translateWhaleName(whaleName);
+            const localWhaleName = translateWhaleName(alert.trader);
 
             const outcome = translated?.answerEs || translateAnswer(alert.outcome);
 
@@ -115,7 +90,7 @@ export default function Home() {
 
           return {
             ...channel,
-            name: localChannelName || channel.name,
+            name: channel.name,
             alerts,
           };
         });

@@ -22,6 +22,19 @@ export type WhalePerformance = {
   winRate: number;
 };
 
+const WHALE_NAME_ES: Record<string, string> = {
+  "Global Sports Arb Lambda": "Arbitraje Deportivo Global Lambda",
+  "NBA Volume Trader Theta": "Operador de Volumen NBA Theta",
+  "Everything Trader Zeta": "Trader Todoterreno Zeta",
+  "Everything Trader Delta": "Trader Todoterreno Delta",
+  "Geopolitical Macro Omega": "Macro Geopolitico Omega",
+  "Soccer Esports Titan Alpha": "Titan del Futbol Esports Alpha",
+};
+
+function translateWhaleName(name: string) {
+  return WHALE_NAME_ES[name] ?? name;
+}
+
 type DashboardLayoutProps = {
   channels: FeedChannel[];
   whalePerformance: WhalePerformance[];
@@ -186,7 +199,9 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                       className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-main)] p-3 transition-all hover:border-[var(--color-accent)]/40"
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-[var(--color-text-primary)]">{channel.name}</p>
+                        <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                          {translateWhaleName(channel.name)}
+                        </h3>
                         <span className="rounded-full bg-[#f59e0b]/15 px-2 py-0.5 text-xs font-semibold text-[#f59e0b]">
                           {channel.isSubscribed ? "Desbloqueado" : "Bloqueado"}
                         </span>

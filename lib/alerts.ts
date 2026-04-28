@@ -186,11 +186,12 @@ export function buildDashboardData(apiAlerts: ApiAlert[]): {
   });
 
   const channels: FeedChannel[] = Array.from(groupedAlerts.entries()).map(
-    ([whaleId, entry], index) => ({
+    ([whaleId, entry]) => ({
       id: whaleId,
       name: entry.name,
+      slug: whaleId,
+      unlocked: false,
       alerts: entry.alerts,
-      isSubscribedByDefault: index === 0,
     }),
   );
 

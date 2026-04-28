@@ -34,12 +34,7 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
   const [activeView, setActiveView] = useState<"panel" | "channel">("panel");
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [channelPage, setChannelPage] = useState<number>(1);
-  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(
-    () =>
-      new Set(
-        channels.filter((channel) => channel.isSubscribedByDefault).map((channel) => channel.id),
-      ),
-  );
+  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(() => new Set());
   const { user, logout } = useAuth();
   const router = useRouter();
 

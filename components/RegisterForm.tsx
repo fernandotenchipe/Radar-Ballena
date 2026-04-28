@@ -1,29 +1,62 @@
 "use client";
 
 import { useState } from "react";
-import { useAuth } from "./AuthContext";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
-export default function LoginForm() {
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
+
+    if (password !== confirmPassword) {
+      setError("Las contraseñas no coinciden");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      router.push("/");
+      if (!API_URL) {
+        throw new Error("NEXT_PUBLIC_API_URL no está configurada");
+      }
+
+      const response = await fetch(`${API_URL}/api/auth/register`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || "No se pudo crear la cuenta");
+      }
+
+      setSuccess("Cuenta creada. Ahora puedes iniciar sesión.");
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+
+      window.setTimeout(() => {
+        router.push("/login");
+      }, 1200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error al iniciar sesión");
+      setError(err instanceof Error ? err.message : "Error al registrarse");
     } finally {
       setIsLoading(false);
     }
@@ -32,7 +65,6 @@ export default function LoginForm() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-main)] px-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
         <div className="mb-8 flex justify-center">
           <div className="login-logo-wrapper">
             <Image
@@ -46,22 +78,19 @@ export default function LoginForm() {
           </div>
         </div>
 
-        {/* Card de login */}
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-6 shadow-lg sm:p-8">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">
-              Bienvenido
+              Crear cuenta
             </h1>
             <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Accede a tu dashboard de whale alerts
+              Regístrate para acceder al dashboard
             </p>
           </div>
 
-          {/* Formulario */}
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+              <label htmlFor="email" className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
                 Email
               </label>
               <input
@@ -75,9 +104,8 @@ export default function LoginForm() {
               />
             </div>
 
-            {/* Contraseña */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-[var(--color-text-primary)] mb-2">
+              <label htmlFor="password" className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
                 Contraseña
               </label>
               <input
@@ -91,48 +119,54 @@ export default function LoginForm() {
               />
             </div>
 
-            {/* Error */}
+            <div>
+              <label htmlFor="confirmPassword" className="mb-2 block text-sm font-medium text-[var(--color-text-primary)]">
+                Confirmar contraseña
+              </label>
+              <input
+                id="confirmPassword"
+                type="password"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-main)] px-4 py-2.5 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/50 transition-colors focus:border-[#06b6d4]/50 focus:outline-none focus:ring-2 focus:ring-[#06b6d4]/20"
+                disabled={isLoading}
+              />
+            </div>
+
             {error && (
-              <div className="rounded-lg bg-[#ef4444]/10 border border-[#ef4444]/30 p-3">
+              <div className="rounded-lg border border-[#ef4444]/30 bg-[#ef4444]/10 p-3">
                 <p className="text-sm text-[#ef4444]">{error}</p>
               </div>
             )}
 
-            {/* Botón de login */}
+            {success && (
+              <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3">
+                <p className="text-sm text-emerald-400">{success}</p>
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full rounded-lg bg-gradient-to-r from-[#06b6d4] to-[#3b82f6] px-4 py-2.5 font-semibold text-white transition-all hover:shadow-lg hover:from-[#06b6d4]/90 hover:to-[#3b82f6]/90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg bg-gradient-to-r from-[#06b6d4] to-[#3b82f6] px-4 py-2.5 font-semibold text-white transition-all hover:shadow-lg hover:from-[#06b6d4]/90 hover:to-[#3b82f6]/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isLoading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Iniciando sesión...
-                </span>
-              ) : (
-                "Iniciar Sesión"
-              )}
+              {isLoading ? "Creando cuenta..." : "Registrarme"}
             </button>
           </form>
 
           <div className="mt-6 border-t border-[var(--color-border)] pt-4 text-center">
             <p className="text-sm text-[var(--color-text-secondary)]">
-              ¿No tienes cuenta?{" "}
+              ¿Ya tienes cuenta?{" "}
               <Link
-                href="/register"
+                href="/login"
                 className="font-semibold text-[#06b6d4] transition-colors hover:text-[#38bdf8]"
               >
-                Regístrate
-              </Link>{" "}
-              para iniciar sesión.
+                Inicia sesión
+              </Link>
             </p>
           </div>
         </div>
-
-        {/* Footer */}
-        <p className="mt-6 text-center text-xs text-[var(--color-text-secondary)]">
-          RadarBallena Dashboard © 2026
-        </p>
       </div>
     </div>
   );

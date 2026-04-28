@@ -57,25 +57,30 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
   const liveAlerts = pagedAlerts.filter((alert) => !alert.isHistory);
   const historyAlerts = pagedAlerts.filter((alert) => alert.isHistory);
 
-  const sidebarChannels: SidebarChannel[] = useMemo(
+  const previewChannels = channels;
+  const sidebarChannels = useMemo(
     () =>
-      channels.map((channel) => ({
-        id: channel.id,
-        name: channel.name,
-        alertCount: channel.alerts.filter((alert) => !alert.isHistory).length,
-        unlocked: channel.unlocked,
-      })),
+      channels
+        .filter((channel) => channel.unlocked)
+        .map((channel) => ({
+          id: channel.id,
+          name: channel.name,
+          alertCount: channel.alerts.filter((alert) => !alert.isHistory).length,
+          unlocked: channel.unlocked,
+        })),
     [channels],
   );
-
-  const unlockedSidebarChannels = sidebarChannels.filter((channel) => channel.unlocked);
+  const statsChannels = useMemo(
+    () => channels.filter((channel) => channel.unlocked),
+    [channels],
+  );
 
   const performanceById = useMemo(
     () => new Map(whalePerformance.map((item) => [item.id, item])),
     [whalePerformance],
   );
 
-  const channelPreview = channels.map((channel) => {
+  const channelPreview = previewChannels.map((channel) => {
     const performance = performanceById.get(channel.id);
     const wins = performance?.wins ?? 0;
     const losses = performance?.losses ?? 0;
@@ -115,7 +120,7 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
       <div className="mx-auto flex w-[calc(100%-1rem)] max-w-[1700px] overflow-hidden border border-[var(--color-border)] bg-[var(--color-bg-main)] md:my-3 md:min-h-[calc(100vh-1.5rem)] md:rounded-2xl">
         <div className="hidden xl:block">
           <Sidebar
-            channels={unlockedSidebarChannels}
+              channels={sidebarChannels}
             selectedChannelId={selectedChannelId}
             onSelectChannel={openChannel}
           />
@@ -229,8 +234,15 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
                   </h2>
                 </div>
 
-                <div className="mt-4 space-y-3">
-                  {whalePerformance.map((whale) => {
+                {statsChannels.length === 0 ? (
+                  <p className="mt-4 text-sm text-[var(--color-text-secondary)]">
+                    No hay canales desbloqueados aún.
+                  </p>
+                ) : (
+                  <div className="mt-4 space-y-3">
+                    {whalePerformance
+                      .filter((whale) => statsChannels.some((channel) => channel.id === whale.id))
+                      .map((whale) => {
                     const total = whale.wins + whale.losses;
                     const winRate = total > 0 ? Math.round((whale.wins / total) * 100) : 0;
                     const lossRate = total > 0 ? 100 - winRate : 0;
@@ -265,9 +277,10 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
                           </span>
                         </div>
                       </article>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                )}
               </section>
             </>
           ) : (

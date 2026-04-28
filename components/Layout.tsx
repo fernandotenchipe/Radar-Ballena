@@ -13,8 +13,9 @@ const ALERTS_PER_PAGE = 6;
 export type FeedChannel = {
   id: string;
   name: string;
+  slug: string;
+  unlocked: boolean;
   alerts: AlertItem[];
-  isSubscribedByDefault?: boolean;
 };
 
 export type WhalePerformance = {
@@ -28,13 +29,13 @@ export type WhalePerformance = {
 type DashboardLayoutProps = {
   channels: FeedChannel[];
   whalePerformance: WhalePerformance[];
+  onUnlockChannel: (channelId: string) => Promise<void> | void;
 };
 
-export default function DashboardLayout({ channels, whalePerformance }: DashboardLayoutProps) {
+export default function DashboardLayout({ channels, whalePerformance, onUnlockChannel }: DashboardLayoutProps) {
   const [activeView, setActiveView] = useState<"panel" | "channel">("panel");
   const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [channelPage, setChannelPage] = useState<number>(1);
-  const [subscribedIds, setSubscribedIds] = useState<Set<string>>(() => new Set());
   const { user, logout } = useAuth();
   const router = useRouter();
 
@@ -52,7 +53,7 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
   const pageStart = (currentPage - 1) * ALERTS_PER_PAGE;
   const pagedAlerts = selectedChannelAlerts.slice(pageStart, pageStart + ALERTS_PER_PAGE);
 
-  const isSubscribed = selectedChannel ? subscribedIds.has(selectedChannel.id) : false;
+  const isSubscribed = selectedChannel ? selectedChannel.unlocked : false;
   const liveAlerts = pagedAlerts.filter((alert) => !alert.isHistory);
   const historyAlerts = pagedAlerts.filter((alert) => alert.isHistory);
 
@@ -62,12 +63,12 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
         id: channel.id,
         name: channel.name,
         alertCount: channel.alerts.filter((alert) => !alert.isHistory).length,
-        isSubscribed: subscribedIds.has(channel.id),
+        unlocked: channel.unlocked,
       })),
-    [channels, subscribedIds],
+    [channels],
   );
 
-  const unlockedSidebarChannels = sidebarChannels.filter((channel) => channel.isSubscribed);
+  const unlockedSidebarChannels = sidebarChannels.filter((channel) => channel.unlocked);
 
   const performanceById = useMemo(
     () => new Map(whalePerformance.map((item) => [item.id, item])),
@@ -85,16 +86,16 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
       id: channel.id,
       name: channel.name,
       winRate,
-      isSubscribed: subscribedIds.has(channel.id),
+      isSubscribed: channel.unlocked,
     };
   });
 
-  const subscribeToSelectedChannel = () => {
+  const subscribeToSelectedChannel = async () => {
     if (!selectedChannel) {
       return;
     }
 
-    setSubscribedIds((prev) => new Set(prev).add(selectedChannel.id));
+    await onUnlockChannel(selectedChannel.id);
   };
 
   const openChannel = (channelId: string) => {
@@ -107,10 +108,6 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
     setActiveView("panel");
     setSelectedChannelId(null);
     setChannelPage(1);
-  };
-
-  const unlockChannel = (channelId: string) => {
-    setSubscribedIds((prev) => new Set(prev).add(channelId));
   };
 
   return (
@@ -214,7 +211,7 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                       {!channel.isSubscribed ? (
                         <button
                           type="button"
-                          onClick={() => unlockChannel(channel.id)}
+                          onClick={() => void onUnlockChannel(channel.id)}
                           className="mt-3 rounded-full border border-[#3b82f6]/40 bg-[#3b82f6]/10 px-3 py-1.5 text-xs font-semibold text-[#3b82f6] transition-colors hover:bg-[#3b82f6]/15 hover:border-[#3b82f6]/60"
                         >
                           Desbloquear canal
@@ -312,7 +309,7 @@ export default function DashboardLayout({ channels, whalePerformance }: Dashboar
                   </p>
                   <button
                     type="button"
-                    onClick={subscribeToSelectedChannel}
+                    onClick={() => void subscribeToSelectedChannel()}
                     className="mt-5 rounded-full border border-[#3b82f6]/40 bg-[#3b82f6]/10 px-4 py-2 text-sm font-semibold text-[#3b82f6] transition-colors hover:bg-[#3b82f6]/15 hover:border-[#3b82f6]/60"
                   >
                     Suscribirme Al Canal

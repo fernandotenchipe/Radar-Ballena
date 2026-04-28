@@ -6,7 +6,7 @@ export type SidebarChannel = {
   id: string;
   name: string;
   alertCount: number;
-  isSubscribed: boolean;
+  unlocked: boolean;
 };
 
 import { translateWhaleName } from "@/lib/translateWhaleName";

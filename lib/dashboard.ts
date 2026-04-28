@@ -63,10 +63,46 @@ function unwrapList<T>(payload: unknown): T[] {
   }
 
   if (payload && typeof payload === "object") {
-    const data = (payload as { data?: unknown }).data;
+    const record = payload as {
+      data?: unknown;
+      channels?: unknown;
+      items?: unknown;
+      records?: unknown;
+      results?: unknown;
+    };
 
-    if (Array.isArray(data)) {
-      return data as T[];
+    if (Array.isArray(record.data)) {
+      return record.data as T[];
+    }
+
+    if (record.data && typeof record.data === "object") {
+      const nested = record.data as {
+        channels?: unknown;
+        items?: unknown;
+        records?: unknown;
+        results?: unknown;
+      };
+
+      if (Array.isArray(nested.channels)) return nested.channels as T[];
+      if (Array.isArray(nested.items)) return nested.items as T[];
+      if (Array.isArray(nested.records)) return nested.records as T[];
+      if (Array.isArray(nested.results)) return nested.results as T[];
+    }
+
+    if (Array.isArray(record.channels)) {
+      return record.channels as T[];
+    }
+
+    if (Array.isArray(record.items)) {
+      return record.items as T[];
+    }
+
+    if (Array.isArray(record.records)) {
+      return record.records as T[];
+    }
+
+    if (Array.isArray(record.results)) {
+      return record.results as T[];
     }
   }
 

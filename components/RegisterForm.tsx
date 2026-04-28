@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+const MIN_PASSWORD_LEN = 8;
+
 export default function RegisterForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,10 +23,15 @@ export default function RegisterForm() {
     setError("");
     setSuccess("");
 
-    if (password !== confirmPassword) {
-      setError("Las contraseñas no coinciden");
-      return;
-    }
+      if (password.length < MIN_PASSWORD_LEN) {
+        setError(`La contraseña debe tener al menos ${MIN_PASSWORD_LEN} caracteres`);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError("Las contraseñas no coinciden");
+        return;
+      }
 
     setIsLoading(true);
 
@@ -114,9 +121,11 @@ export default function RegisterForm() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                minLength={MIN_PASSWORD_LEN}
                 className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-main)] px-4 py-2.5 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/50 transition-colors focus:border-[#06b6d4]/50 focus:outline-none focus:ring-2 focus:ring-[#06b6d4]/20"
                 disabled={isLoading}
               />
+              <p className="mt-1 text-xs text-[var(--color-text-secondary)]">Mínimo {MIN_PASSWORD_LEN} caracteres.</p>
             </div>
 
             <div>
@@ -129,6 +138,7 @@ export default function RegisterForm() {
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
+                minLength={MIN_PASSWORD_LEN}
                 className="w-full rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-main)] px-4 py-2.5 text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)]/50 transition-colors focus:border-[#06b6d4]/50 focus:outline-none focus:ring-2 focus:ring-[#06b6d4]/20"
                 disabled={isLoading}
               />

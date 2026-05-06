@@ -62,7 +62,7 @@ export async function translateAlerts(
   }
 
   try {
-    console.log("calling /api/translate-alerts", missing.slice(0, 8));
+    console.log("calling /api/translate-alerts", missing.slice(0, 6));
 
     const res = await fetch("/api/translate-alerts", {
       method: "POST",
@@ -70,7 +70,7 @@ export async function translateAlerts(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        items: missing.slice(0, 8),
+        items: missing.slice(0, 6),
       }),
     });
 

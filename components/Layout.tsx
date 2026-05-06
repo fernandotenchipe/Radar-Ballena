@@ -46,14 +46,22 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
     router.push("/login");
   };
 
-  const selectedChannel =
-    channels.find((channel) => channel.id === selectedChannelId) ?? null;
+  const selectedChannel = useMemo(
+    () => channels.find((channel) => channel.id === selectedChannelId) ?? null,
+    [channels, selectedChannelId]
+  );
 
-  const selectedChannelAlerts = selectedChannel?.alerts ?? [];
+  const selectedChannelAlerts = useMemo(
+    () => selectedChannel?.alerts ?? [],
+    [selectedChannel]
+  );
   const totalPages = Math.max(1, Math.ceil(selectedChannelAlerts.length / ALERTS_PER_PAGE));
   const currentPage = channelPage > totalPages ? totalPages : channelPage;
   const pageStart = (currentPage - 1) * ALERTS_PER_PAGE;
-  const pagedAlerts = selectedChannelAlerts.slice(pageStart, pageStart + ALERTS_PER_PAGE);
+  const pagedAlerts = useMemo(
+    () => selectedChannelAlerts.slice(pageStart, pageStart + ALERTS_PER_PAGE),
+    [selectedChannelAlerts, pageStart]
+  );
 
   const [channelTranslations, setChannelTranslations] = useState(new Map<string, {
     id: string;
@@ -63,11 +71,8 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
 
   useEffect(() => {
     if (activeView !== "channel" || pagedAlerts.length === 0) {
-      if (channelTranslations.size > 0) {
-        const t = setTimeout(() => setChannelTranslations(new Map()), 0);
-        return () => clearTimeout(t);
-      }
-      return;
+      const t = setTimeout(() => setChannelTranslations(new Map()), 0);
+      return () => clearTimeout(t);
     }
 
     const items = pagedAlerts.map((alert) => ({
@@ -82,7 +87,7 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
         new Map(translations.map((item) => [item.id, item]))
       );
     });
-  }, [activeView, selectedChannelId, currentPage, pagedAlerts, channelTranslations]);
+  }, [activeView, selectedChannelId, currentPage, pagedAlerts]);
 
   const isSubscribed = selectedChannel ? selectedChannel.unlocked : false;
   const translatedPagedAlerts = pagedAlerts.map((alert) => {

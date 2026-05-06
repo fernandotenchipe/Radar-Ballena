@@ -14,7 +14,7 @@ export type AlertTranslationResult = {
 
 type TranslationCache = Record<string, AlertTranslationResult>;
 
-const CACHE_STORAGE_KEY = "translations-cache-v2";
+const CACHE_STORAGE_KEY = "translations-cache-v3";
 
 function getCacheKey(item: {
   whaleName?: string;

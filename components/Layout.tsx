@@ -63,6 +63,7 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
     [selectedChannelAlerts, pageStart]
   );
 
+  const [isTranslatingChannel, setIsTranslatingChannel] = useState(false);
   const [channelTranslations, setChannelTranslations] = useState(new Map<string, {
     id: string;
     marketTitleEs?: string;
@@ -70,23 +71,51 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
   }>());
 
   useEffect(() => {
-    if (activeView !== "channel" || pagedAlerts.length === 0) {
-      const t = setTimeout(() => setChannelTranslations(new Map()), 0);
-      return () => clearTimeout(t);
+    let cancelled = false;
+
+    async function runTranslation() {
+      if (activeView !== "channel" || pagedAlerts.length === 0) {
+        if (!cancelled) {
+          setIsTranslatingChannel(false);
+          setChannelTranslations(new Map());
+        }
+        return;
+      }
+
+      setIsTranslatingChannel(true);
+
+      const items = pagedAlerts.map((alert) => ({
+        id: alert.id,
+        whaleName: alert.trader,
+        marketTitle: alert.question,
+        answer: alert.outcome,
+      }));
+
+      try {
+        const translations = await translateAlerts(items);
+
+        if (cancelled) return;
+
+        setChannelTranslations(
+          new Map(translations.map((item) => [item.id, item])),
+        );
+      } catch (error) {
+        console.error("Channel translation failed:", error);
+        if (!cancelled) {
+          setChannelTranslations(new Map());
+        }
+      } finally {
+        if (!cancelled) {
+          setIsTranslatingChannel(false);
+        }
+      }
     }
 
-    const items = pagedAlerts.map((alert) => ({
-      id: alert.id,
-      whaleName: alert.trader,
-      marketTitle: alert.question,
-      answer: alert.outcome,
-    }));
+    void runTranslation();
 
-    void translateAlerts(items).then((translations) => {
-      setChannelTranslations(
-        new Map(translations.map((item) => [item.id, item]))
-      );
-    });
+    return () => {
+      cancelled = true;
+    };
   }, [activeView, selectedChannelId, currentPage, pagedAlerts]);
 
   const isSubscribed = selectedChannel ? selectedChannel.unlocked : false;
@@ -376,26 +405,42 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
                 </section>
               ) : (
                 <>
-                  <section className="space-y-2.5">
-                    {liveAlerts.map((alert) => (
-                      <AlertCard key={alert.id} alert={alert} />
-                    ))}
-                  </section>
-
-                  {historyAlerts.length > 0 ? (
-                    <section className="mt-4">
-                      <div className="mb-2.5 flex items-center gap-3 text-sm text-[var(--color-text-secondary)]">
-                        <span className="h-px flex-1 bg-[var(--color-border)]" />
-                        <span>historial</span>
-                        <span className="h-px flex-1 bg-[var(--color-border)]" />
-                      </div>
-                      <div className="space-y-2.5">
-                        {historyAlerts.map((alert) => (
+                  {isTranslatingChannel ? (
+                    <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-6">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
+                        Traduciendo
+                      </p>
+                      <h2 className="mt-2 text-xl font-semibold text-[var(--color-text-primary)]">
+                        Preparando alerts del canal...
+                      </h2>
+                      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                        Esto puede tardar unos segundos.
+                      </p>
+                    </section>
+                  ) : (
+                    <>
+                      <section className="space-y-2.5">
+                        {liveAlerts.map((alert) => (
                           <AlertCard key={alert.id} alert={alert} />
                         ))}
-                      </div>
-                    </section>
-                  ) : null}
+                      </section>
+
+                      {historyAlerts.length > 0 ? (
+                        <section className="mt-4">
+                          <div className="mb-2.5 flex items-center gap-3 text-sm text-[var(--color-text-secondary)]">
+                            <span className="h-px flex-1 bg-[var(--color-border)]" />
+                            <span>historial</span>
+                            <span className="h-px flex-1 bg-[var(--color-border)]" />
+                          </div>
+                          <div className="space-y-2.5">
+                            {historyAlerts.map((alert) => (
+                              <AlertCard key={alert.id} alert={alert} />
+                            ))}
+                          </div>
+                        </section>
+                      ) : null}
+                    </>
+                  )}
 
                   {selectedChannelAlerts.length > ALERTS_PER_PAGE ? (
                     <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-3">

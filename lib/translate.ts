@@ -12,9 +12,14 @@ export type AlertTranslationResult = {
   answerEs?: string;
 };
 
-type TranslationCache = Record<string, AlertTranslationResult>;
+type TranslationCacheEntry = {
+  translation: AlertTranslationResult;
+  sourceSignature: string;
+};
 
-const CACHE_STORAGE_KEY = "translations-cache-v4";
+type TranslationCache = Record<string, TranslationCacheEntry>;
+
+const CACHE_STORAGE_KEY = "translations-cache-v5";
 
 function getCacheKey(item: {
   whaleName?: string;
@@ -22,6 +27,48 @@ function getCacheKey(item: {
   answer?: string;
 }) {
   return [item.whaleName ?? "", item.marketTitle ?? "", item.answer ?? ""].join("|");
+}
+
+function cleanText(value: string) {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function normalizeForSimilarity(value: string) {
+  let text = cleanText(value).toLowerCase();
+
+  text = text.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  text = text.replace(/\b(january|february|march|april|may|june|july|august|september|october|november|december)\b/gi, "<month>");
+  text = text.replace(/\b\d{1,2},\s*\d{4}\b/g, "<date>");
+  text = text.replace(/\b\d{4}\b/g, "<year>");
+  text = text.replace(/\b\d+([.,]\d+)?\b/g, "<num>");
+  text = text.replace(/["'“”‘’?.!,;:()[\]{}\/\\-]+/g, " ");
+  text = text.replace(/\s+/g, " ").trim();
+
+  return text;
+}
+
+function getSourceSignature(item: AlertTranslationInput) {
+  return [
+    normalizeForSimilarity(item.whaleName ?? ""),
+    normalizeForSimilarity(item.marketTitle),
+    normalizeForSimilarity(item.answer),
+  ].join("|");
+}
+
+function getCachedEntry(
+  item: AlertTranslationInput,
+  cached: TranslationCache,
+): TranslationCacheEntry | undefined {
+  const exact = cached[getCacheKey(item)];
+  const signature = getSourceSignature(item);
+
+  if (exact?.translation && !looksUntranslated(item, exact.translation)) {
+    return exact;
+  }
+
+  return Object.values(cached).find(
+    (entry) => entry.sourceSignature === signature && !looksUntranslated(item, entry.translation),
+  );
 }
 
 function looksUntranslated(
@@ -80,10 +127,9 @@ export async function translateAlerts(
   }
 
   const missing = items.filter((item) => {
-    const key = getCacheKey(item);
-    const cachedItem = cached[key];
+    const cachedItem = getCachedEntry(item, cached);
 
-    return !cachedItem || looksUntranslated(item, cachedItem);
+    return !cachedItem;
   });
 
   console.log("translateAlerts cached keys", Object.keys(cached).length);
@@ -91,7 +137,7 @@ export async function translateAlerts(
 
   if (missing.length === 0) {
     return items
-      .map((item) => cached[getCacheKey(item)])
+      .map((item) => getCachedEntry(item, cached)?.translation)
       .filter((value): value is AlertTranslationResult => Boolean(value));
   }
 
@@ -112,7 +158,7 @@ export async function translateAlerts(
 
     if (!res.ok) {
       return items
-        .map((item) => cached[getCacheKey(item)])
+        .map((item) => getCachedEntry(item, cached)?.translation)
         .filter((value): value is AlertTranslationResult => Boolean(value));
     }
 
@@ -120,11 +166,7 @@ export async function translateAlerts(
       translations?: AlertTranslationResult[];
     };
 
-    const freshById = new Map(
-      (data.translations ?? [])
-        .filter((item) => typeof item.id === "string" && item.id.length > 0)
-        .map((item) => [item.id, item]),
-    );
+    const usableFreshById = new Map<string, AlertTranslationResult>();
 
     for (const translation of data.translations ?? []) {
       const original = missing.find((item) => item.id === translation.id);
@@ -132,22 +174,29 @@ export async function translateAlerts(
 
       const key = getCacheKey(original);
       if (!looksUntranslated(original, translation)) {
-        cached[key] = translation;
+        usableFreshById.set(original.id, translation);
+        cached[key] = {
+          translation,
+          sourceSignature: getSourceSignature(original),
+        };
       }
     }
 
     window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cached));
 
     return items
-      .map((item) => freshById.get(item.id) ?? cached[getCacheKey(item)])
+      .map((item) => {
+        const fresh = usableFreshById.get(item.id);
+        if (fresh) return fresh;
+
+        const cachedEntry = getCachedEntry(item, cached);
+        return cachedEntry?.translation;
+      })
       .filter((value): value is AlertTranslationResult => Boolean(value));
   } catch {
     // On error, return only cached entries that look translated.
     return items
-      .map((item) => cached[getCacheKey(item)])
-      .filter((value): value is AlertTranslationResult => Boolean(value) && !looksUntranslated(
-        { id: "", marketTitle: value.marketTitleEs ?? "", whaleName: "", answer: value.answerEs ?? "" },
-        value
-      ));
+      .map((item) => getCachedEntry(item, cached)?.translation)
+      .filter((value): value is AlertTranslationResult => Boolean(value));
   }
 }

@@ -110,26 +110,27 @@ function looksUntranslated(
   if (!translated) return true;
   if (translated === source) return true;
 
-  const englishSignals = [
-    " will ",
-    " by ",
-    " before ",
-    " after ",
-    " occur ",
-    " win ",
-    " out as ",
-    " chair ",
-    " nuclear ",
-    " deal ",
-    " surrender ",
-    " stockpile ",
-    " fed ",
-    " u.s.",
-    " us ",
+  // Only check the STRONGEST signals of English untranslated content
+  const strongEnglishSignals = [
+    " will the ",
+    " will ",  // only if not at end (very likely untranslated)
+    " by may ",
+    " by june ",
+    " by ",  // strong signal at start
   ];
 
   const padded = ` ${translated} `;
-  return englishSignals.some((term) => padded.includes(term));
+  // Check for strong English patterns
+  if (strongEnglishSignals.some((term) => padded.includes(term))) {
+    return true;
+  }
+
+  // If it's very short and identical to original, it's untranslated
+  if (translated.length < 20 && translated === source) {
+    return true;
+  }
+
+  return false;
 }
 
 export async function translateAlerts(
@@ -211,7 +212,13 @@ export async function translateAlerts(
       }
 
       const key = getCacheKey(original);
-      if (!looksUntranslated(original, translation)) {
+      const isUntranslated = looksUntranslated(original, translation);
+      
+      if (isUntranslated) {
+        console.log(`[CLIENT] Rejecting translation for ${translation.id}: "${translation.marketTitleEs?.substring(0, 60)}" looks untranslated`);
+      }
+      
+      if (!isUntranslated) {
         usableFreshById.set(original.id, translation);
         cached[key] = {
           translation,

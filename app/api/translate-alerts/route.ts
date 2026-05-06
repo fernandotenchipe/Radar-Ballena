@@ -153,27 +153,17 @@ function looksUntranslatedMarketTitle(source = "", translated = ""): boolean {
   if (!out) return true;
   if (src && out === src) return true;
 
-  const englishSignals = [
-    " will ",
-    " by ",
-    " before ",
-    " after ",
-    " occur ",
-    " win ",
-    " out as ",
-    " chair ",
-    " nuclear ",
-    " deal ",
-    " surrender ",
-    " stockpile ",
-    " fed ",
-    " u.s.",
-    " us ",
-    " iran ",
+  // Only strongest English signals—avoid false positives
+  const strongEnglishSignals = [
+    " will the ",
+    " before ",  // strong indicator of unsupported translation
+    " after ",   // strong indicator
+    " by may ",
+    " by june ",
   ];
 
   const padded = ` ${out} `;
-  return englishSignals.some((term) => padded.includes(term));
+  return strongEnglishSignals.some((term) => padded.includes(term));
 }
 
 const months: Record<string, string> = {
@@ -329,6 +319,7 @@ async function translateWithAI(
 
   async function translateChunk(chunk: AIItem[], attempt: number): Promise<Map<string, CachedTranslation>> {
     const map = new Map<string, CachedTranslation>();
+    console.log(`[SERVER] translateChunk attempt=${attempt} with keys=${chunk.map((i) => i.key).join(", ")}`);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
@@ -407,12 +398,25 @@ ${JSON.stringify(chunk)}`;
       }
 
       // If any translation looks untranslated, treat this attempt as failed so we can retry
+      const untranslatedItems: string[] = [];
       for (const item of chunk) {
         const translated = map.get(item.key);
         const aiLooksUntranslated = looksUntranslatedMarketTitle(item.marketTitle ?? "", translated?.marketTitleEs ?? "");
         if (aiLooksUntranslated) {
-          throw new Error("AI returned possibly untranslated content");
+          untranslatedItems.push(item.key);
+          console.warn(`[SERVER] Item ${item.key} looks untranslated: "${translated?.marketTitleEs?.substring(0, 60)}"`);
         }
+      }
+
+      // If ALL items in chunk look untranslated, retry the whole chunk
+      if (untranslatedItems.length === chunk.length) {
+        console.warn(`[SERVER] ALL ${chunk.length} items look untranslated, will retry`);
+        throw new Error("AI returned possibly untranslated content for entire chunk");
+      }
+
+      // If some items look untranslated, keep the good ones and warn
+      if (untranslatedItems.length > 0) {
+        console.warn(`[SERVER] ${untranslatedItems.length}/${chunk.length} items look untranslated, keeping good ones`);
       }
 
       return map;
@@ -514,6 +518,10 @@ export async function POST(request: NextRequest) {
 
     try {
       aiTranslations = await translateWithAI(uniqueForAI, fallbacks);
+      console.log(`[SERVER] AI returned ${aiTranslations.size} translations for ${uniqueForAI.length} items`);
+      for (const [key, trans] of aiTranslations.entries()) {
+        console.log(`[SERVER] AI key=${key} marketTitleEs="${trans.marketTitleEs?.substring(0, 60)}"`);
+      }
     } catch (error) {
       console.error("translate-alerts AI fallback:", error);
       aiWarning = "AI no respondio a tiempo; se uso traduccion local.";
@@ -552,6 +560,10 @@ export async function POST(request: NextRequest) {
         (cachedUsable ? cachedTranslation : undefined) ??
         (aiUsable ? aiTranslation : undefined) ??
         fallbackTranslation(item);
+
+      if (aiTranslation && !aiUsable) {
+        console.log(`[SERVER] Rejected AI translation for ${item.id}: AI="${aiTranslation.marketTitleEs?.substring(0, 50)}" looks untranslated`);
+      }
 
       return {
         id: item.id,

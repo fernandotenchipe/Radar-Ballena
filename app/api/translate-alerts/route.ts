@@ -31,7 +31,7 @@ type AITranslation = {
 };
 
 const MAX_ITEMS = 8;
-const TIMEOUT_MS = 2_500;
+const TIMEOUT_MS = 3_500;
 const MAX_CACHE_SIZE = 3000;
 
 const globalCache = globalThis as typeof globalThis & {
@@ -429,16 +429,24 @@ export async function POST(request: NextRequest) {
       aiWarning = "AI no respondio a tiempo; se uso traduccion local.";
     }
 
-    for (const [key, fallback] of fallbacks) {
+    for (const [key] of fallbacks) {
       if (cache.has(key)) continue;
 
-      const translated = aiTranslations.get(key) ?? fallback;
-      setCache(key, translated);
+      const aiTranslated = aiTranslations.get(key);
+
+      // Solo cachear traducciones reales de IA.
+      // No cachear fallback local porque puede quedar medio ingles.
+      if (aiTranslated) {
+        setCache(key, aiTranslated);
+      }
     }
 
     const translations = items.map((item) => {
       const key = makeKey(item);
-      const translated = cache.get(key) ?? fallbackTranslation(item);
+      const translated =
+        cache.get(key) ??
+        aiTranslations.get(key) ??
+        fallbackTranslation(item);
 
       return {
         id: item.id,

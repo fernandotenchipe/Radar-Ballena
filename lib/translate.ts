@@ -14,7 +14,7 @@ export type AlertTranslationResult = {
 
 type TranslationCache = Record<string, AlertTranslationResult>;
 
-const CACHE_STORAGE_KEY = "translations-cache-v3";
+const CACHE_STORAGE_KEY = "translations-cache-v4";
 
 function getCacheKey(item: {
   whaleName?: string;
@@ -24,20 +24,18 @@ function getCacheKey(item: {
   return [item.whaleName ?? "", item.marketTitle ?? "", item.answer ?? ""].join("|");
 }
 
-function looksUntranslated(item: AlertTranslationInput, cached?: AlertTranslationResult) {
-  if (!cached?.marketTitleEs) return true;
-
-  const original = item.marketTitle.trim().toLowerCase();
-  const translated = cached.marketTitleEs.trim().toLowerCase();
+function looksUntranslated(
+  original: AlertTranslationInput,
+  translation?: AlertTranslationResult,
+) {
+  const translated = translation?.marketTitleEs?.trim().toLowerCase();
+  const source = original.marketTitle.trim().toLowerCase();
 
   if (!translated) return true;
+  if (translated === source) return true;
 
-  // Si quedo igual o casi igual, re-traducir.
-  if (translated === original) return true;
-
-  // Senales claras de que sigue en ingles.
   const englishSignals = [
-    "will ",
+    " will ",
     " by ",
     " before ",
     " after ",
@@ -45,20 +43,17 @@ function looksUntranslated(item: AlertTranslationInput, cached?: AlertTranslatio
     " win ",
     " out as ",
     " chair ",
-    " nuclear deal",
-    " permanent peace deal",
+    " nuclear ",
+    " deal ",
     " surrender ",
-    " stockpile",
+    " stockpile ",
     " fed ",
     " u.s.",
     " us ",
-    "iran",
   ];
 
-  const hasEnglish = englishSignals.some((term) => translated.includes(term));
-
-  // Si todavia tiene varias palabras inglesas tipicas, re-traducir.
-  return hasEnglish;
+  const padded = ` ${translated} `;
+  return englishSignals.some((term) => padded.includes(term));
 }
 
 export async function translateAlerts(
@@ -130,7 +125,9 @@ export async function translateAlerts(
       if (!original) continue;
 
       const key = getCacheKey(original);
-      cached[key] = translation;
+      if (!looksUntranslated(original, translation)) {
+        cached[key] = translation;
+      }
     }
 
     window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cached));

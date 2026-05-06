@@ -92,13 +92,24 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
         answer: alert.outcome,
       }));
 
+      console.log("Layout: requesting translation for pagedAlerts IDs:", pagedAlerts.map((a) => a.id));
+
       try {
         const translations = await translateAlerts(items);
 
         if (cancelled) return;
 
+        // Validate that the translations correspond to the current pagedAlerts
+        const currentPagedAlertIds = new Set(pagedAlerts.map((a) => a.id));
+        console.log("Layout: current pagedAlerts IDs:", Array.from(currentPagedAlertIds));
+        console.log("Layout: received translations IDs:", translations.map((t) => t.id));
+        
+        const validTranslations = translations.filter((t) => currentPagedAlertIds.has(t.id));
+
+        console.log("Layout: Channel translations received:", translations.length, "valid for current page:", validTranslations.length);
+
         setChannelTranslations(
-          new Map(translations.map((item) => [item.id, item])),
+          new Map(validTranslations.map((item) => [item.id, item])),
         );
       } catch (error) {
         console.error("Channel translation failed:", error);
@@ -125,6 +136,9 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
   const isSubscribed = selectedChannel ? selectedChannel.unlocked : false;
   const translatedPagedAlerts = pagedAlerts.map((alert) => {
     const translation = channelTranslations.get(alert.id);
+    if (!translation) {
+      console.log("Layout render: no translation for alert ID:", alert.id, "question:", alert.question.substring(0, 50));
+    }
 
     return {
       ...alert,

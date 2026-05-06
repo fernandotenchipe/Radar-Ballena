@@ -62,12 +62,41 @@ function getCachedEntry(
   const exact = cached[getCacheKey(item)];
   const signature = getSourceSignature(item);
 
+  // Helper to extract translation from either old (direct) or new (wrapped) format
+  const extractTranslation = (entry: unknown): AlertTranslationResult | undefined => {
+    if (!entry || typeof entry !== 'object') return undefined;
+    const obj = entry as Record<string, unknown>;
+    return 'translation' in obj ? (obj.translation as AlertTranslationResult) : (obj as AlertTranslationResult);
+  };
+
+  // Helper to wrap translation into TranslationCacheEntry for consistent return type
+  const wrapEntry = (entry: unknown, sig: string): TranslationCacheEntry => {
+    if (!entry || typeof entry !== 'object') return { translation: { id: "", whaleNameEs: "", marketTitleEs: "", answerEs: "" }, sourceSignature: sig };
+    const obj = entry as Record<string, unknown>;
+    if ('translation' in obj) return obj as TranslationCacheEntry;
+    return { translation: obj as AlertTranslationResult, sourceSignature: sig };
+  };
+
+  // Try exact key match with new format
   if (exact?.translation && !looksUntranslated(item, exact.translation)) {
     return exact;
   }
 
+  // Try exact key match with old format (direct AlertTranslationResult)
+  if (exact && !('translation' in exact)) {
+    const translation = extractTranslation(exact);
+    if (translation && !looksUntranslated(item, translation)) {
+      return wrapEntry(exact, signature);
+    }
+  }
+
+  // Try similarity-based match (new format)
   return Object.values(cached).find(
-    (entry) => entry.sourceSignature === signature && !looksUntranslated(item, entry.translation),
+    (entry) => {
+      const translation = extractTranslation(entry);
+      const entrySignature = ('sourceSignature' in entry) ? entry.sourceSignature : "";
+      return entrySignature === signature && translation && !looksUntranslated(item, translation);
+    },
   );
 }
 
@@ -106,7 +135,7 @@ function looksUntranslated(
 export async function translateAlerts(
   items: AlertTranslationInput[],
 ): Promise<AlertTranslationResult[]> {
-  console.log("translateAlerts called", items);
+  console.log("translateAlerts called with IDs:", items.map((i) => i.id));
 
   if (items.length === 0) {
     console.log("translateAlerts skipped: empty items");
@@ -133,16 +162,18 @@ export async function translateAlerts(
   });
 
   console.log("translateAlerts cached keys", Object.keys(cached).length);
-  console.log("translateAlerts missing", missing);
+  console.log("translateAlerts missing IDs", missing.map((m) => m.id));
 
   if (missing.length === 0) {
-    return items
+    const result = items
       .map((item) => getCachedEntry(item, cached)?.translation)
       .filter((value): value is AlertTranslationResult => Boolean(value));
+    console.log("translateAlerts returning from cache IDs:", result.map((r) => r.id));
+    return result;
   }
 
   try {
-    console.log("calling /api/translate-alerts", missing.slice(0, 6));
+    console.log("calling /api/translate-alerts with IDs:", missing.slice(0, 6).map((m) => m.id));
 
     const res = await fetch("/api/translate-alerts", {
       method: "POST",
@@ -157,20 +188,27 @@ export async function translateAlerts(
     console.log("translate-alerts status", res.status);
 
     if (!res.ok) {
-      return items
+      const result = items
         .map((item) => getCachedEntry(item, cached)?.translation)
         .filter((value): value is AlertTranslationResult => Boolean(value));
+      console.log("translateAlerts (error response) returning IDs:", result.map((r) => r.id));
+      return result;
     }
 
     const data = (await res.json()) as {
       translations?: AlertTranslationResult[];
     };
 
+    console.log("translate-alerts received IDs:", (data.translations ?? []).map((t) => t.id));
+
     const usableFreshById = new Map<string, AlertTranslationResult>();
 
     for (const translation of data.translations ?? []) {
       const original = missing.find((item) => item.id === translation.id);
-      if (!original) continue;
+      if (!original) {
+        console.warn("translateAlerts: received translation for unknown ID", translation.id);
+        continue;
+      }
 
       const key = getCacheKey(original);
       if (!looksUntranslated(original, translation)) {
@@ -184,7 +222,7 @@ export async function translateAlerts(
 
     window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cached));
 
-    return items
+    const result = items
       .map((item) => {
         const fresh = usableFreshById.get(item.id);
         if (fresh) return fresh;
@@ -193,10 +231,16 @@ export async function translateAlerts(
         return cachedEntry?.translation;
       })
       .filter((value): value is AlertTranslationResult => Boolean(value));
-  } catch {
+    
+    console.log("translateAlerts returning final IDs:", result.map((r) => r.id));
+    return result;
+  } catch (error) {
+    console.error("translateAlerts error:", error);
     // On error, return only cached entries that look translated.
-    return items
+    const result = items
       .map((item) => getCachedEntry(item, cached)?.translation)
       .filter((value): value is AlertTranslationResult => Boolean(value));
+    console.log("translateAlerts (error catch) returning IDs:", result.map((r) => r.id));
+    return result;
   }
 }

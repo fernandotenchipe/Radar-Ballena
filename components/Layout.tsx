@@ -1,12 +1,14 @@
 "use client";
 
 import AlertCard, { AlertItem } from "@/components/AlertCard";
-import Sidebar, { SidebarChannel } from "@/components/Sidebar";
+import Sidebar from "@/components/Sidebar";
 import ThemeToggle from "@/components/ThemeToggle";
 import { useAuth } from "@/components/AuthContext";
 import { translateWhaleName } from "@/lib/translateWhaleName";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { translateAlerts } from "@/lib/translate";
+import { translateAnswer } from "@/lib/format";
 
 const ALERTS_PER_PAGE = 6;
 
@@ -53,9 +55,48 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
   const pageStart = (currentPage - 1) * ALERTS_PER_PAGE;
   const pagedAlerts = selectedChannelAlerts.slice(pageStart, pageStart + ALERTS_PER_PAGE);
 
+  const [channelTranslations, setChannelTranslations] = useState(new Map<string, {
+    id: string;
+    marketTitleEs?: string;
+    answerEs?: string;
+  }>());
+
+  useEffect(() => {
+    if (activeView !== "channel" || pagedAlerts.length === 0) {
+      if (channelTranslations.size > 0) {
+        const t = setTimeout(() => setChannelTranslations(new Map()), 0);
+        return () => clearTimeout(t);
+      }
+      return;
+    }
+
+    const items = pagedAlerts.map((alert) => ({
+      id: alert.id,
+      whaleName: alert.trader,
+      marketTitle: alert.question,
+      answer: alert.outcome,
+    }));
+
+    void translateAlerts(items).then((translations) => {
+      setChannelTranslations(
+        new Map(translations.map((item) => [item.id, item]))
+      );
+    });
+  }, [activeView, selectedChannelId, currentPage, pagedAlerts, channelTranslations]);
+
   const isSubscribed = selectedChannel ? selectedChannel.unlocked : false;
-  const liveAlerts = pagedAlerts.filter((alert) => !alert.isHistory);
-  const historyAlerts = pagedAlerts.filter((alert) => alert.isHistory);
+  const translatedPagedAlerts = pagedAlerts.map((alert) => {
+    const translation = channelTranslations.get(alert.id);
+
+    return {
+      ...alert,
+      question: translation?.marketTitleEs || alert.question,
+      outcome: translation?.answerEs || translateAnswer(alert.outcome),
+    };
+  });
+
+  const liveAlerts = translatedPagedAlerts.filter((alert) => !alert.isHistory);
+  const historyAlerts = translatedPagedAlerts.filter((alert) => alert.isHistory);
 
   const previewChannels = channels;
   const sidebarChannels = useMemo(

@@ -14,7 +14,7 @@ export type AlertTranslationResult = {
 
 type TranslationCache = Record<string, AlertTranslationResult>;
 
-const CACHE_STORAGE_KEY = "translations-cache";
+const CACHE_STORAGE_KEY = "translations-cache-v2";
 
 function getCacheKey(item: {
   whaleName?: string;
@@ -55,6 +55,8 @@ export async function translateAlerts(
   }
 
   try {
+    console.log("calling /api/translate-alerts", missing.slice(0, 8));
+
     const res = await fetch("/api/translate-alerts", {
       method: "POST",
       headers: {
@@ -64,6 +66,8 @@ export async function translateAlerts(
         items: missing.slice(0, 8),
       }),
     });
+
+    console.log("translate-alerts status", res.status);
 
     if (!res.ok) {
       return items

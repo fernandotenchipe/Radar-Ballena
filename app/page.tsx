@@ -193,6 +193,7 @@ async function buildChannelsWithAlerts(
     .slice(0, 8)
     .map(({ item }) => ({
       id: item.id,
+      whaleName: item.trader,
       marketTitle: item.question,
       answer: item.outcome,
     }));

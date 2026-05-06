@@ -52,6 +52,9 @@ export async function translateAlerts(
     return !cached[key];
   });
 
+  console.log("translateAlerts cached keys", Object.keys(cached).length);
+  console.log("translateAlerts missing", missing);
+
   if (missing.length === 0) {
     return items
       .map((item) => cached[getCacheKey(item)])

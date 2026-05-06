@@ -139,11 +139,15 @@ export async function translateAlerts(
     window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cached));
 
     return items
-      .map((item) => cached[getCacheKey(item)] ?? freshById.get(item.id))
+      .map((item) => freshById.get(item.id) ?? cached[getCacheKey(item)])
       .filter((value): value is AlertTranslationResult => Boolean(value));
   } catch {
+    // On error, return only cached entries that look translated.
     return items
       .map((item) => cached[getCacheKey(item)])
-      .filter((value): value is AlertTranslationResult => Boolean(value));
+      .filter((value): value is AlertTranslationResult => Boolean(value) && !looksUntranslated(
+        { id: "", marketTitle: value.marketTitleEs ?? "", whaleName: "", answer: value.answerEs ?? "" },
+        value
+      ));
   }
 }

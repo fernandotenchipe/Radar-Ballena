@@ -197,22 +197,9 @@ async function buildChannelsWithAlerts(
       answer: item.outcome,
     }));
 
-  console.log("TRANSLATION visibleAlerts", visibleAlerts);
-
-  let translations: Awaited<ReturnType<typeof translateAlerts>> = [];
-
-  try {
-    translations = await translateAlerts(visibleAlerts);
-  } catch (error) {
-    console.error("Translation failed:", error);
-    translations = [];
-  }
-
-  const translationsById = new Map(
-    translations
-      .filter((item) => typeof item.id === "string" && item.id.length > 0)
-      .map((item) => [item.id, item]),
-  );
+  // Preview: no AI translations here to avoid extra API calls.
+  // Use only local formatting for answers.
+  const translationsById = new Map<string, { id: string; marketTitleEs?: string; answerEs?: string }>();
 
   for (const { channelKey, item } of normalizedAlerts) {
     const current = groupedAlerts.get(channelKey);
@@ -222,8 +209,9 @@ async function buildChannelsWithAlerts(
       ...item,
       trader: item.trader,
       category: item.category,
-      question: translated?.marketTitleEs || item.question,
-      outcome: translated?.answerEs || translateAnswer(item.outcome),
+      // Preview intentionally shows original titles; only format answers.
+      question: item.question,
+      outcome: translateAnswer(item.outcome),
     };
 
     if (current) {

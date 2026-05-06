@@ -146,6 +146,36 @@ function answerFallback(answer = ""): string {
   return map[a.toLowerCase()] ?? a;
 }
 
+function looksUntranslatedMarketTitle(source = "", translated = ""): boolean {
+  const src = cleanText(source).toLowerCase();
+  const out = cleanText(translated).toLowerCase();
+
+  if (!out) return true;
+  if (src && out === src) return true;
+
+  const englishSignals = [
+    " will ",
+    " by ",
+    " before ",
+    " after ",
+    " occur ",
+    " win ",
+    " out as ",
+    " chair ",
+    " nuclear ",
+    " deal ",
+    " surrender ",
+    " stockpile ",
+    " fed ",
+    " u.s.",
+    " us ",
+    " iran ",
+  ];
+
+  const padded = ` ${out} `;
+  return englishSignals.some((term) => padded.includes(term));
+}
+
 const months: Record<string, string> = {
   january: "enero",
   february: "febrero",
@@ -200,6 +230,7 @@ function marketTitleFallback(title = ""): string {
   t = t.replace(/\bagrees to surrender\b/gi, "acepta entregar");
   t = t.replace(/\benriched uranium stockpile\b/gi, "reservas de uranio enriquecido");
   t = t.replace(/\bcloses its airspace\b/gi, "cierra su espacio aéreo");
+  t = t.replace(/\bdiplomatic meeting\b/gi, "reunión diplomática");
 
   // Complete geopolitical patterns
   t = t.replace(
@@ -220,6 +251,16 @@ function marketTitleFallback(title = ""): string {
   t = t.replace(
     /^Irán cierra su espacio aéreo antes del (.+)\?$/i,
     "¿Irán cierra su espacio aéreo antes del $1?"
+  );
+
+  t = t.replace(
+    /^Will the next (.+?) occur after (.+)\?$/i,
+    "¿La próxima $1 ocurre después de $2?"
+  );
+
+  t = t.replace(
+    /^Will the next (.+?) occur before (.+)\?$/i,
+    "¿La próxima $1 ocurre antes de $2?"
   );
 
   const ou = t.match(/^(.+?)\s*:\s*O\/U\s*([0-9.]+)$/i);
@@ -393,6 +434,7 @@ export async function POST(request: NextRequest) {
     }
 
     const fallbacks = new Map<string, CachedTranslation>();
+    const sourceByKey = new Map<string, TranslateItem>();
     const uniqueForAI: AIItem[] = [];
     const seenKeys = new Set<string>();
 
@@ -401,10 +443,16 @@ export async function POST(request: NextRequest) {
     for (const item of items) {
       const key = makeKey(item);
       const fallback = fallbackTranslation(item);
+      const cachedTranslation = cache.get(key);
+      const hasGoodCached =
+        Boolean(cachedTranslation) &&
+        !looksUntranslatedMarketTitle(item.marketTitle ?? "", cachedTranslation?.marketTitleEs ?? "");
+
+      sourceByKey.set(key, item);
 
       fallbacks.set(key, fallback);
 
-      if (cache.has(key)) {
+      if (hasGoodCached) {
         cacheHits++;
         continue;
       }
@@ -433,19 +481,34 @@ export async function POST(request: NextRequest) {
       if (cache.has(key)) continue;
 
       const aiTranslated = aiTranslations.get(key);
+      const source = sourceByKey.get(key);
+      const aiLooksUntranslated = looksUntranslatedMarketTitle(
+        source?.marketTitle ?? "",
+        aiTranslated?.marketTitleEs ?? "",
+      );
 
       // Solo cachear traducciones reales de IA.
       // No cachear fallback local porque puede quedar medio ingles.
-      if (aiTranslated) {
+      if (aiTranslated && !aiLooksUntranslated) {
         setCache(key, aiTranslated);
       }
     }
 
     const translations = items.map((item) => {
       const key = makeKey(item);
+      const cachedTranslation = cache.get(key);
+      const aiTranslation = aiTranslations.get(key);
+
+      const cachedUsable =
+        Boolean(cachedTranslation) &&
+        !looksUntranslatedMarketTitle(item.marketTitle ?? "", cachedTranslation?.marketTitleEs ?? "");
+      const aiUsable =
+        Boolean(aiTranslation) &&
+        !looksUntranslatedMarketTitle(item.marketTitle ?? "", aiTranslation?.marketTitleEs ?? "");
+
       const translated =
-        cache.get(key) ??
-        aiTranslations.get(key) ??
+        (cachedUsable ? cachedTranslation : undefined) ??
+        (aiUsable ? aiTranslation : undefined) ??
         fallbackTranslation(item);
 
       return {

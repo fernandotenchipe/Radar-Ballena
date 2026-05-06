@@ -120,6 +120,12 @@ export async function translateAlerts(
       translations?: AlertTranslationResult[];
     };
 
+    const freshById = new Map(
+      (data.translations ?? [])
+        .filter((item) => typeof item.id === "string" && item.id.length > 0)
+        .map((item) => [item.id, item]),
+    );
+
     for (const translation of data.translations ?? []) {
       const original = missing.find((item) => item.id === translation.id);
       if (!original) continue;
@@ -133,7 +139,7 @@ export async function translateAlerts(
     window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cached));
 
     return items
-      .map((item) => cached[getCacheKey(item)])
+      .map((item) => cached[getCacheKey(item)] ?? freshById.get(item.id))
       .filter((value): value is AlertTranslationResult => Boolean(value));
   } catch {
     return items

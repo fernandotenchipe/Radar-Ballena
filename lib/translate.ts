@@ -27,11 +27,15 @@ function getCacheKey(item: {
 export async function translateAlerts(
   items: AlertTranslationInput[],
 ): Promise<AlertTranslationResult[]> {
+  console.log("translateAlerts called", items);
+
   if (items.length === 0) {
+    console.log("translateAlerts skipped: empty items");
     return [];
   }
 
   if (typeof window === "undefined") {
+    console.log("translateAlerts skipped: server side");
     return [];
   }
 

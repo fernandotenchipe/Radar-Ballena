@@ -189,7 +189,6 @@ async function buildChannelsWithAlerts(
   });
 
   const visibleAlerts = normalizedAlerts
-    .filter(({ item }) => !item.isHistory)
     .slice(0, 8)
     .map(({ item }) => ({
       id: item.id,
@@ -197,6 +196,8 @@ async function buildChannelsWithAlerts(
       marketTitle: item.question,
       answer: item.outcome,
     }));
+
+  console.log("TRANSLATION visibleAlerts", visibleAlerts);
 
   let translations: Awaited<ReturnType<typeof translateAlerts>> = [];
 

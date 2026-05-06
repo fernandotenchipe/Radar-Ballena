@@ -72,6 +72,7 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
 
   useEffect(() => {
     let cancelled = false;
+    const delayMs = 500; // small debounce to reduce race conditions
 
     async function runTranslation() {
       if (activeView !== "channel" || pagedAlerts.length === 0) {
@@ -111,10 +112,13 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
       }
     }
 
-    void runTranslation();
+    const timer = setTimeout(() => {
+      void runTranslation();
+    }, delayMs);
 
     return () => {
       cancelled = true;
+      clearTimeout(timer);
     };
   }, [activeView, selectedChannelId, currentPage, pagedAlerts]);
 

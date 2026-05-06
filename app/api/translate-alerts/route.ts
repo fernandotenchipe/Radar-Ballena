@@ -312,11 +312,29 @@ async function translateWithAI(
   if (items.length === 0) return result;
   if (!process.env.OPENAI_API_KEY) return result;
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const concurrency = Math.min(2, items.length);
+  const retries = 2; // number of retries
+  const baseBackoff = 500; // ms
 
-  try {
-    const prompt = `Traduce al espanol editorial para un dashboard llamado RadarBallena.
+  function chunkArray<T>(arr: T[], n: number): T[][] {
+    const out: T[][] = [];
+    const per = Math.ceil(arr.length / n);
+    for (let i = 0; i < arr.length; i += per) out.push(arr.slice(i, i + per));
+    return out;
+  }
+
+  function wait(ms: number) {
+    return new Promise((res) => setTimeout(res, ms));
+  }
+
+  async function translateChunk(chunk: AIItem[], attempt: number): Promise<Map<string, CachedTranslation>> {
+    const map = new Map<string, CachedTranslation>();
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    try {
+      const prompt = `Traduce al espanol editorial para un dashboard llamado RadarBallena.
 
 Reglas:
 - Devuelve SOLO JSON valido.
@@ -341,70 +359,94 @@ Formato exacto:
 }
 
 Datos:
-${JSON.stringify(items)}`;
+${JSON.stringify(chunk)}`;
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: process.env.OPENAI_TRANSLATE_MODEL ?? "gpt-4o-mini",
-        temperature: 0,
-        max_tokens: 1800,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: "Devuelve unicamente JSON valido. Nada de markdown.",
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-      }),
-    });
-
-    const data = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      throw new Error(`OpenAI error ${response.status}`);
-    }
-
-    const content = data?.choices?.[0]?.message?.content;
-
-    if (!content) {
-      throw new Error("Respuesta vacia del traductor");
-    }
-
-    const parsed = JSON.parse(
-      content.replace(/^```json\s*/i, "").replace(/```$/i, "")
-    ) as { translations?: AITranslation[] };
-
-    for (const row of parsed.translations ?? []) {
-      const key = cleanText(row.key);
-      if (!key) continue;
-
-      const fallback = fallbacks.get(key) ?? {
-        whaleNameEs: "",
-        marketTitleEs: "",
-        answerEs: "",
-      };
-
-      result.set(key, {
-        whaleNameEs: cleanText(row.whaleNameEs) || fallback.whaleNameEs,
-        marketTitleEs: cleanText(row.marketTitleEs) || fallback.marketTitleEs,
-        answerEs: cleanText(row.answerEs) || fallback.answerEs,
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: process.env.OPENAI_TRANSLATE_MODEL ?? "gpt-4o-mini",
+          temperature: 0,
+          max_tokens: 1800,
+          response_format: { type: "json_object" },
+          messages: [
+            { role: "system", content: "Devuelve unicamente JSON valido. Nada de markdown." },
+            { role: "user", content: prompt },
+          ],
+        }),
       });
+
+      const data = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(`OpenAI error ${response.status}`);
+      }
+
+      const content = data?.choices?.[0]?.message?.content;
+      if (!content) throw new Error("Respuesta vacia del traductor");
+
+      const parsed = JSON.parse(
+        content.replace(/^```json\s*/i, "").replace(/```$/i, "")
+      ) as { translations?: AITranslation[] };
+
+      for (const row of parsed.translations ?? []) {
+        const key = cleanText(row.key);
+        if (!key) continue;
+
+        const fallback = fallbacks.get(key) ?? { whaleNameEs: "", marketTitleEs: "", answerEs: "" };
+
+        map.set(key, {
+          whaleNameEs: cleanText(row.whaleNameEs) || fallback.whaleNameEs,
+          marketTitleEs: cleanText(row.marketTitleEs) || fallback.marketTitleEs,
+          answerEs: cleanText(row.answerEs) || fallback.answerEs,
+        });
+      }
+
+      // If any translation looks untranslated, treat this attempt as failed so we can retry
+      for (const item of chunk) {
+        const translated = map.get(item.key);
+        const aiLooksUntranslated = looksUntranslatedMarketTitle(item.marketTitle ?? "", translated?.marketTitleEs ?? "");
+        if (aiLooksUntranslated) {
+          throw new Error("AI returned possibly untranslated content");
+        }
+      }
+
+      return map;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  const chunks = chunkArray(items, concurrency);
+
+  const promises = chunks.map(async (chunk) => {
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        return await translateChunk(chunk, attempt);
+      } catch (err) {
+        const last = attempt === retries;
+        console.warn(`translateWithAI chunk attempt ${attempt} error:`, err);
+        if (last) {
+          // give up on this chunk and return empty map so fallbacks are used
+          return new Map<string, CachedTranslation>();
+        }
+        await wait(baseBackoff * Math.pow(2, attempt));
+      }
     }
 
-    return result;
-  } finally {
-    clearTimeout(timeout);
+    return new Map<string, CachedTranslation>();
+  });
+
+  const results = await Promise.all(promises);
+  for (const m of results) {
+    for (const [k, v] of m.entries()) result.set(k, v);
   }
+
+  return result;
 }
 
 export async function POST(request: NextRequest) {

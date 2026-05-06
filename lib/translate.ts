@@ -24,6 +24,43 @@ function getCacheKey(item: {
   return [item.whaleName ?? "", item.marketTitle ?? "", item.answer ?? ""].join("|");
 }
 
+function looksUntranslated(item: AlertTranslationInput, cached?: AlertTranslationResult) {
+  if (!cached?.marketTitleEs) return true;
+
+  const original = item.marketTitle.trim().toLowerCase();
+  const translated = cached.marketTitleEs.trim().toLowerCase();
+
+  if (!translated) return true;
+
+  // Si quedo igual o casi igual, re-traducir.
+  if (translated === original) return true;
+
+  // Senales claras de que sigue en ingles.
+  const englishSignals = [
+    "will ",
+    " by ",
+    " before ",
+    " after ",
+    " occur ",
+    " win ",
+    " out as ",
+    " chair ",
+    " nuclear deal",
+    " permanent peace deal",
+    " surrender ",
+    " stockpile",
+    " fed ",
+    " u.s.",
+    " us ",
+    "iran",
+  ];
+
+  const hasEnglish = englishSignals.some((term) => translated.includes(term));
+
+  // Si todavia tiene varias palabras inglesas tipicas, re-traducir.
+  return hasEnglish;
+}
+
 export async function translateAlerts(
   items: AlertTranslationInput[],
 ): Promise<AlertTranslationResult[]> {
@@ -49,7 +86,9 @@ export async function translateAlerts(
 
   const missing = items.filter((item) => {
     const key = getCacheKey(item);
-    return !cached[key];
+    const cachedItem = cached[key];
+
+    return !cachedItem || looksUntranslated(item, cachedItem);
   });
 
   console.log("translateAlerts cached keys", Object.keys(cached).length);

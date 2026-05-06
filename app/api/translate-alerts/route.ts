@@ -135,9 +135,9 @@ function answerFallback(answer = ""): string {
   if (!a) return "";
 
   const map: Record<string, string> = {
-    yes: "Si",
+    yes: "Sí",
     no: "No",
-    over: "Mas",
+    over: "Más",
     under: "Menos",
     buy: "Compra",
     sell: "Venta",
@@ -168,11 +168,59 @@ function translateMonths(text: string): string {
   );
 }
 
+function translateDeadlineDate(text: string): string {
+  return text.replace(
+    /\bby\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2})(,\s*\d{4})?\??$/i,
+    (_match, month, day, year = "") => {
+      const monthEs = months[String(month).toLowerCase()] ?? month;
+      return `antes del ${day} de ${monthEs}${year}?`;
+    }
+  );
+}
+
 function marketTitleFallback(title = ""): string {
   let t = cleanText(title);
   if (!t) return "";
 
+  t = translateDeadlineDate(t);
   t = translateMonths(t);
+
+  // Geopolitical translations
+  t = t.replace(/\bUS-Iran\b/gi, "EE. UU.-Irán");
+  t = t.replace(/\bUS x Iran\b/gi, "EE. UU. x Irán");
+  t = t.replace(/\bIran\b/gi, "Irán");
+  t = t.replace(/\bUkraine\b/gi, "Ucrania");
+  t = t.replace(/\bRussia\b/gi, "Rusia");
+  t = t.replace(/\bIsrael\b/gi, "Israel");
+  t = t.replace(/\bChina\b/gi, "China");
+  t = t.replace(/\bTaiwan\b/gi, "Taiwán");
+
+  t = t.replace(/\bnuclear deal\b/gi, "acuerdo nuclear");
+  t = t.replace(/\bpermanent peace deal\b/gi, "acuerdo de paz permanente");
+  t = t.replace(/\bagrees to surrender\b/gi, "acepta entregar");
+  t = t.replace(/\benriched uranium stockpile\b/gi, "reservas de uranio enriquecido");
+  t = t.replace(/\bcloses its airspace\b/gi, "cierra su espacio aéreo");
+
+  // Complete geopolitical patterns
+  t = t.replace(
+    /^EE\.\s*UU\.-Irán acuerdo nuclear antes del (.+)\?$/i,
+    "¿Acuerdo nuclear entre EE. UU. e Irán antes del $1?"
+  );
+
+  t = t.replace(
+    /^Irán acepta entregar reservas de uranio enriquecido antes del (.+)\?$/i,
+    "¿Irán acepta entregar sus reservas de uranio enriquecido antes del $1?"
+  );
+
+  t = t.replace(
+    /^EE\.\s*UU\. x Irán acuerdo de paz permanente antes del (.+)\?$/i,
+    "¿Acuerdo de paz permanente entre EE. UU. e Irán antes del $1?"
+  );
+
+  t = t.replace(
+    /^Irán cierra su espacio aéreo antes del (.+)\?$/i,
+    "¿Irán cierra su espacio aéreo antes del $1?"
+  );
 
   const ou = t.match(/^(.+?)\s*:\s*O\/U\s*([0-9.]+)$/i);
   if (ou) return `${ou[1]}: Mas/Menos de ${ou[2]}`;
@@ -232,10 +280,13 @@ async function translateWithAI(
 Reglas:
 - Devuelve SOLO JSON valido.
 - No inventes datos.
-- Conserva equipos, personas, ligas, tickers y siglas.
+- Traduce marketTitle completamente al español.
+- No mezcles inglés y español salvo nombres propios, países, equipos, ligas, tickers o siglas.
+- Convierte fechas tipo "by May 31, 2026" a "antes del 31 de mayo de 2026".
+- Conserva el sentido predictivo de Polymarket.
+- Usa español natural, no traducción literal.
 - Si marketTitle esta vacio, dejalo vacio.
 - answer traducelo solo si aplica: Yes/No/Over/Under/Buy/Sell.
-- marketTitle debe sonar claro para usuario hispano.
 
 Formato exacto:
 {

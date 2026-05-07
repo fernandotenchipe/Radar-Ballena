@@ -9,8 +9,8 @@ export const WHALE_NAMES_ES: Record<string, string> = {
 
 export const CHANNEL_TO_WHALE_ID: Record<string, string> = {
   nba_volume: "nba_volume",
-  "NBA Volume Trader Theta": "nba_volume",
-  "Operador de Volumen NBA Theta": "nba_volume",
+  "NBA Volume Trader ": "nba_volume",
+  "Operador de Volumen NBA ": "nba_volume",
 
   geo_macro: "geo_macro",
   "Geopolitical Macro Whale": "geo_macro",
@@ -21,12 +21,12 @@ export const CHANNEL_TO_WHALE_ID: Record<string, string> = {
   "Macro Economía": "macro_economics",
 
   sports_arb: "sports_arb",
-  "Global Sports Arb Lambda": "sports_arb",
-  "Arbitraje Deportivo Global Lambda": "sports_arb",
+  "Global Sports Arb ": "sports_arb",
+  "Arbitraje Deportivo Global": "sports_arb",
 
   global_trader: "global_trader",
-  "Everything Trader Zeta": "global_trader",
-  "Trader Todoterreno Zeta": "global_trader",
+  "Everything Trader ": "global_trader",
+  "Trader Todoterreno ": "global_trader",
 
   sports_esports_titan: "sports_esports_titan",
   "Soccer Esports Titan": "sports_esports_titan",
@@ -36,17 +36,17 @@ export const CHANNEL_TO_WHALE_ID: Record<string, string> = {
 export const WHALE_CHANNEL_CONFIGS = [
   {
     id: "global_trader",
-    name: "Everything Trader Zeta",
+    name: "Everything Trader ",
     displayName: "Trader Todoterreno",
   },
   {
     id: "sports_arb",
-    name: "Global Sports Arb Lambda",
+    name: "Global Sports Arb ",
     displayName: "Arbitraje Deportivo Global",
   },
   {
     id: "nba_volume",
-    name: "NBA Volume Trader Theta",
+    name: "NBA Volume Trader ",
     displayName: "Operador de Volumen NBA",
   },
   {

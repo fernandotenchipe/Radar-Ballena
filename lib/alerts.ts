@@ -125,10 +125,7 @@ export async function fetchAlerts(): Promise<ApiAlert[]> {
 
   const responses = await Promise.all(
     WHALE_IDS.map(async (whaleId) => {
-      const params = new URLSearchParams({
-        whale: whaleId,
-        limit: "100",
-      });
+      const params = new URLSearchParams({ whale: whaleId, limit: "100" });
 
       const res = await fetch(`${API_URL}/api/alerts?${params.toString()}`, {
         method: "GET",
@@ -140,7 +137,16 @@ export async function fetchAlerts(): Promise<ApiAlert[]> {
       }
 
       const json = (await res.json()) as { data?: ApiAlert[] };
-      return json.data ?? [];
+      const data = json.data ?? [];
+
+      try {
+        // diagnostic log
+        console.log(`fetchAlerts: whale=${whaleId} returned=${Array.isArray(data) ? data.length : 0}`);
+      } catch {
+        // ignore
+      }
+
+      return data;
     }),
   );
 
@@ -152,7 +158,7 @@ export function buildDashboardData(apiAlerts: ApiAlert[]): {
   whalePerformance: WhalePerformance[];
 } {
   const sortedAlerts = [...apiAlerts].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
   const groupedAlerts = new Map<string, { name: string; alerts: AlertItem[] }>();

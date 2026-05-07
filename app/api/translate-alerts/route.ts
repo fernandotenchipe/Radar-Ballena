@@ -99,12 +99,11 @@ function setCache(key: string, value: CachedTranslation) {
 }
 
 const exactWhales: Record<string, string> = {
-  "global sports arb lambda": "Arbitraje Deportivo Global ",
-  "nba volume trader theta": "Operador de Volumen NBA Teta",
-  "everything trader zeta": "Trader Todoterreno ",
-  "everything trader delta": "Trader Todoterreno ",
-  "geopolitical macro omega": "Macro Geopolitico ",
-  "soccer esports titan alpha": "Titán del Fútbol Esports Alpha",
+  "global sports arb": "Arbitraje Deportivo Global ",
+  "nba volume trader": "Operador de Volumen NBA",
+  "everything trader": "Trader Todoterreno ",
+  "geopolitical macro": "Macro Geopolitico ",
+  "soccer esports titan": "Titán del Fútbol Esports",
   "sports grinder": "Grinder Deportivo",
 };
 

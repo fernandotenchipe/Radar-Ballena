@@ -173,6 +173,9 @@ async function buildChannelsWithAlerts(
 
   apiAlerts.forEach((alert, index) => {
     const channelKey = resolveChannelKey(alert);
+    // diagnostic: show incoming alert whaleName and resolved channelKey
+    // eslint-disable-next-line no-console
+    console.log(`buildChannelsWithAlerts: alert.whaleName="${alert.whaleName}" -> channelKey="${channelKey}"`);
     const channel =
       channelLookup.get(channelKey) ??
       channelLookup.get(normalizeChannelKey(channelKey)) ??
@@ -196,6 +199,18 @@ async function buildChannelsWithAlerts(
       marketTitle: item.question,
       answer: item.outcome,
     }));
+
+  // diagnostic: show counts per channelKey in normalizedAlerts
+  try {
+    const counts = normalizedAlerts.reduce((acc, cur) => {
+      acc[cur.channelKey] = (acc[cur.channelKey] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    // eslint-disable-next-line no-console
+    console.log('buildChannelsWithAlerts: normalized counts', counts);
+  } catch (e) {
+    // ignore
+  }
 
   // Preview: no AI translations here to avoid extra API calls.
   // Use only local formatting for answers.

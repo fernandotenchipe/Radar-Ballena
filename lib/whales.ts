@@ -4,7 +4,7 @@ export const WHALE_NAMES_ES: Record<string, string> = {
   macro_economics: "Macro Economía",
   sports_arb: "Arbitraje Deportivo Global",
   global_trader: "Trader Todoterreno",
-  sports_esports_titan: "Titán del Fútbol Esports Alpha",
+  sports_esports_titan: "Titán del Fútbol Esports",
 };
 
 export const CHANNEL_TO_WHALE_ID: Record<string, string> = {
@@ -29,8 +29,8 @@ export const CHANNEL_TO_WHALE_ID: Record<string, string> = {
   "Trader Todoterreno Zeta": "global_trader",
 
   sports_esports_titan: "sports_esports_titan",
-  "Soccer Esports Titan Alpha": "sports_esports_titan",
-  "Titán del Fútbol Esports Alpha": "sports_esports_titan",
+  "Soccer Esports Titan": "sports_esports_titan",
+  "Titán del Fútbol Esports": "sports_esports_titan",
 };
 
 export const WHALE_CHANNEL_CONFIGS = [
@@ -61,7 +61,7 @@ export const WHALE_CHANNEL_CONFIGS = [
   },
   {
     id: "sports_esports_titan",
-    name: "Soccer Esports Titan Alpha",
-    displayName: "Titán del Fútbol Esports Alpha",
+    name: "Soccer Esports Titan",
+    displayName: "Titán del Fútbol Esports",
   },
 ];

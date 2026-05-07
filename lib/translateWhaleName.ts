@@ -1,5 +1,5 @@
-const WHALE_NAME_ES: Record<string, string> = {
-  "Soccer Esports Titan Alpha": "Titán del Fútbol Esports",
+﻿const WHALE_NAME_ES: Record<string, string> = {
+  "Soccer Esports Titan": "Titán del Fútbol Esports",
   "NBA Volume Trader Theta": "Operador de Volumen NBA",
   "Global Sports Arb Lambda": "Arbitraje Deportivo Global",
   "Everything Trader Zeta": "Trader Todoterreno",

@@ -133,6 +133,18 @@ function looksUntranslated(
   return false;
 }
 
+function materializeTranslation(
+  item: AlertTranslationInput,
+  translation?: AlertTranslationResult,
+): AlertTranslationResult | undefined {
+  if (!translation) return undefined;
+
+  return {
+    ...translation,
+    id: item.id,
+  };
+}
+
 export async function translateAlerts(
   items: AlertTranslationInput[],
 ): Promise<AlertTranslationResult[]> {
@@ -167,7 +179,7 @@ export async function translateAlerts(
 
   if (missing.length === 0) {
     const result = items
-      .map((item) => getCachedEntry(item, cached)?.translation)
+      .map((item) => materializeTranslation(item, getCachedEntry(item, cached)?.translation))
       .filter((value): value is AlertTranslationResult => Boolean(value));
     console.log("translateAlerts returning from cache IDs:", result.map((r) => r.id));
     return result;
@@ -190,7 +202,7 @@ export async function translateAlerts(
 
     if (!res.ok) {
       const result = items
-        .map((item) => getCachedEntry(item, cached)?.translation)
+        .map((item) => materializeTranslation(item, getCachedEntry(item, cached)?.translation))
         .filter((value): value is AlertTranslationResult => Boolean(value));
       console.log("translateAlerts (error response) returning IDs:", result.map((r) => r.id));
       return result;
@@ -232,10 +244,10 @@ export async function translateAlerts(
     const result = items
       .map((item) => {
         const fresh = usableFreshById.get(item.id);
-        if (fresh) return fresh;
+        if (fresh) return materializeTranslation(item, fresh);
 
         const cachedEntry = getCachedEntry(item, cached);
-        return cachedEntry?.translation;
+        return materializeTranslation(item, cachedEntry?.translation);
       })
       .filter((value): value is AlertTranslationResult => Boolean(value));
     
@@ -245,7 +257,7 @@ export async function translateAlerts(
     console.error("translateAlerts error:", error);
     // On error, return only cached entries that look translated.
     const result = items
-      .map((item) => getCachedEntry(item, cached)?.translation)
+      .map((item) => materializeTranslation(item, getCachedEntry(item, cached)?.translation))
       .filter((value): value is AlertTranslationResult => Boolean(value));
     console.log("translateAlerts (error catch) returning IDs:", result.map((r) => r.id));
     return result;

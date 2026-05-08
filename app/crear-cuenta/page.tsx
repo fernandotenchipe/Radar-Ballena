@@ -1,3 +1,4 @@
+import React from "react";
 import CreateAccountWithInviteForm from "@/components/CreateAccountWithInviteForm";
 
 export const metadata = {
@@ -6,5 +7,9 @@ export const metadata = {
 };
 
 export default function CrearCuentaPage() {
-  return <CreateAccountWithInviteForm />;
+  return (
+    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center">Validando...</div>}>
+      <CreateAccountWithInviteForm />
+    </React.Suspense>
+  );
 }

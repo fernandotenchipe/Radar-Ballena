@@ -31,24 +31,29 @@ export default function CreateAccountWithInviteForm() {
 
   useEffect(() => {
     if (!token) {
-      setStatus("idle");
       return;
     }
 
     if (!API_URL) {
-      setError("NEXT_PUBLIC_API_URL no está configurada en el frontend.");
-      setStatus("invalid");
+      // schedule state updates asynchronously to avoid synchronous setState in effect
+      setTimeout(() => {
+        setError("NEXT_PUBLIC_API_URL no está configurada en el frontend.");
+        setStatus("invalid");
+      }, 0);
       return;
     }
 
     let cancelled = false;
 
     async function validate() {
-      setStatus("validating");
-      setError(null);
+      // schedule initial status update asynchronously to avoid synchronous setState in effect
+      setTimeout(() => {
+        setStatus("validating");
+        setError(null);
+      }, 0);
 
       try {
-        const res = await fetch(`${API_URL}/api/invites/validate?token=${encodeURIComponent(token)}`);
+        const res = await fetch(`${API_URL}/api/invites/validate?token=${encodeURIComponent(token!)}`);
         const data = await res.json().catch(() => null);
 
         if (!res.ok || !data?.ok || !data?.valid) {
@@ -108,7 +113,7 @@ export default function CreateAccountWithInviteForm() {
       const res = await fetch(`${API_URL}/api/auth/register-with-invite`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, password }),
+        body: JSON.stringify({ token: token!, password }),
       });
 
       const data = await res.json().catch(() => null);

@@ -12,6 +12,7 @@ type AuthContextType = {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  completeInviteRegistration: (token: string, user: User) => void;
   logout: () => void;
 };
 
@@ -98,6 +99,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(initialAuth.user);
   const [token, setToken] = useState<string | null>(initialAuth.token);
 
+  function persistSession(jwt: string, userData: User) {
+    setToken(jwt);
+    setUser(userData);
+    setIsAuthenticated(true);
+
+    window.localStorage.setItem(SESSION_KEY, "true");
+    window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
+    window.localStorage.setItem(TOKEN_KEY, jwt);
+    window.localStorage.setItem(USER_KEY, JSON.stringify(userData));
+  }
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -162,14 +174,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("Respuesta de login inválida");
     }
 
-    setToken(jwt);
-    setUser(userData);
-    setIsAuthenticated(true);
+    persistSession(jwt, userData);
+  };
 
-    window.localStorage.setItem(SESSION_KEY, "true");
-    window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-    window.localStorage.setItem(TOKEN_KEY, jwt);
-    window.localStorage.setItem(USER_KEY, JSON.stringify(userData));
+  const completeInviteRegistration = (jwt: string, userData: User) => {
+    // Persist the authenticated session returned by the backend after invite registration
+    persistSession(jwt, userData);
   };
 
   useEffect(() => {
@@ -193,7 +203,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [checkSession, refreshActivity]);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, token, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, user, token, login, completeInviteRegistration, logout }}>
       {children}
     </AuthContext.Provider>
   );

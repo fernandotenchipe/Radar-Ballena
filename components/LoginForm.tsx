@@ -117,14 +117,15 @@ export default function LoginForm() {
 
           <div className="mt-6 border-t border-[var(--color-border)] pt-4 text-center">
             <p className="text-sm text-[var(--color-text-secondary)]">
-              ¿No tienes cuenta?{" "}
+              ¿Ya pagaste? Revisa tu correo y usa tu enlace de acceso.
+            </p>
+            <p className="mt-2 text-sm">
               <Link
-                href="/register"
+                href="/crear-cuenta"
                 className="font-semibold text-[#06b6d4] transition-colors hover:text-[#38bdf8]"
               >
-                Regístrate
-              </Link>{" "}
-              para iniciar sesión.
+                Crear cuenta con invitación
+              </Link>
             </p>
           </div>
         </div>

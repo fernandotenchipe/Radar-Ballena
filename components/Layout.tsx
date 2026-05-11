@@ -17,6 +17,7 @@ export type FeedChannel = {
   name: string;
   slug: string;
   unlocked: boolean;
+  alertCount?: number;
   alerts: AlertItem[];
 };
 
@@ -198,7 +199,7 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
         .map((channel) => ({
           id: channel.id,
           name: channel.name,
-          alertCount: channel.alerts.length,
+          alertCount: channel.alertCount ?? channel.alerts.length,
           unlocked: channel.unlocked,
         })),
     [channels],
@@ -421,7 +422,7 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
               <header className="mb-3.5 flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="text-xs text-[var(--color-text-secondary)]">
-                    {selectedChannel?.name ?? "Canal"} - {selectedChannelAlerts.length} alerts
+                    {selectedChannel?.name ?? "Canal"} - {(selectedChannel?.alertCount ?? selectedChannelAlerts.length)} alerts
                   </p>
                   <h1 className="text-2xl font-semibold leading-none text-[var(--color-text-primary)]">
                     Feed del canal

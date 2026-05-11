@@ -286,7 +286,21 @@ export default function Home() {
         const mergedChannels = await buildChannelsWithAlerts(apiChannels, apiAlerts);
         const whalePerformance = buildWhalePerformance(stats);
 
-        setChannels(mergedChannels);
+        // Create synthetic channels for whales that have stats but no corresponding channel
+        const existingChannelIds = new Set(mergedChannels.map((c) => c.id));
+        const syntheticChannels = whalePerformance
+          .filter((whale) => !existingChannelIds.has(whale.id))
+          .map((whale) => ({
+            id: whale.id,
+            name: whale.whaleName,
+            slug: whale.id,
+            unlocked: true,
+            alerts: [],
+          } as FeedChannel));
+
+        const allChannels = [...mergedChannels, ...syntheticChannels];
+
+        setChannels(allChannels);
         setWhalePerformance(whalePerformance);
       } catch (error) {
         if (error instanceof ApiError && error.status === 401) {

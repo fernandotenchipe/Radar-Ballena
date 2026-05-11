@@ -23,7 +23,7 @@ const WHALE_IDS = [
   "nba_volume",
   "global_trader",
   "sports_esports_titan",
-  "geopolitical_macro",
+  "geo_macro",
   "macro_economics",
 ];
 

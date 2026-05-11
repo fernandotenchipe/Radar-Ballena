@@ -3,6 +3,7 @@ export type ApiChannel = {
   name: string;
   slug: string;
   unlocked: boolean;
+  alertCount?: number;
 };
 
 export type ApiAlert = {

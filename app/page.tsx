@@ -6,7 +6,6 @@ import { useAuth } from "@/components/AuthContext";
 import DashboardLayout from "@/components/Layout";
 import { FeedChannel, WhalePerformance } from "@/components/Layout";
 import { AlertItem } from "@/components/AlertCard";
-import { translateAlerts } from "@/lib/translate";
 import { translateAnswer } from "@/lib/format";
 import { translateWhaleName } from "@/lib/translateWhaleName";
 import { WHALE_CHANNEL_CONFIGS, CHANNEL_TO_WHALE_ID } from "@/lib/whales";
@@ -251,6 +250,7 @@ async function buildChannelsWithAlerts(
       name: displayName,
       slug: channel.slug,
       unlocked: channel.unlocked,
+      alertCount: channel.alertCount ?? channelAlerts.length,
       alerts: channelAlerts.map((alert) => ({
         ...alert,
         trader: displayName,

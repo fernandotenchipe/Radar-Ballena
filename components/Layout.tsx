@@ -72,7 +72,6 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
 
   useEffect(() => {
     let cancelled = false;
-    const delayMs = 500; // small debounce to reduce race conditions
 
     async function runTranslation() {
       if (activeView !== "channel" || pagedAlerts.length === 0) {
@@ -123,13 +122,10 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
       }
     }
 
-    const timer = setTimeout(() => {
-      void runTranslation();
-    }, delayMs);
+    void runTranslation();
 
     return () => {
       cancelled = true;
-      clearTimeout(timer);
     };
   }, [activeView, selectedChannelId, currentPage, pagedAlerts]);
 
@@ -423,42 +419,39 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
                 </section>
               ) : (
                 <>
-                  {isTranslatingChannel ? (
-                    <section className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-6">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--color-text-secondary)]">
-                        Traduciendo
-                      </p>
-                      <h2 className="mt-2 text-xl font-semibold text-[var(--color-text-primary)]">
-                        Preparando alerts del canal...
-                      </h2>
-                      <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
-                        Esto puede tardar unos segundos.
-                      </p>
-                    </section>
-                  ) : (
-                    <>
-                      <section className="space-y-2.5">
-                        {liveAlerts.map((alert) => (
+                  <section className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] px-4 py-2 text-xs text-[var(--color-text-secondary)]">
+                    <span>
+                      {isTranslatingChannel
+                        ? "Traduciendo el título de estas alerts"
+                        : "Traducción lista"}
+                    </span>
+                    <span>
+                      {isTranslatingChannel
+                        ? `${channelTranslations.size}/${pagedAlerts.length} traducidas`
+                        : `${pagedAlerts.length} alerts cargadas`}
+                    </span>
+                  </section>
+
+                  <section className="space-y-2.5">
+                    {liveAlerts.map((alert) => (
+                      <AlertCard key={alert.id} alert={alert} />
+                    ))}
+                  </section>
+
+                  {historyAlerts.length > 0 ? (
+                    <section className="mt-4">
+                      <div className="mb-2.5 flex items-center gap-3 text-sm text-[var(--color-text-secondary)]">
+                        <span className="h-px flex-1 bg-[var(--color-border)]" />
+                        <span>historial</span>
+                        <span className="h-px flex-1 bg-[var(--color-border)]" />
+                      </div>
+                      <div className="space-y-2.5">
+                        {historyAlerts.map((alert) => (
                           <AlertCard key={alert.id} alert={alert} />
                         ))}
-                      </section>
-
-                      {historyAlerts.length > 0 ? (
-                        <section className="mt-4">
-                          <div className="mb-2.5 flex items-center gap-3 text-sm text-[var(--color-text-secondary)]">
-                            <span className="h-px flex-1 bg-[var(--color-border)]" />
-                            <span>historial</span>
-                            <span className="h-px flex-1 bg-[var(--color-border)]" />
-                          </div>
-                          <div className="space-y-2.5">
-                            {historyAlerts.map((alert) => (
-                              <AlertCard key={alert.id} alert={alert} />
-                            ))}
-                          </div>
-                        </section>
-                      ) : null}
-                    </>
-                  )}
+                      </div>
+                    </section>
+                  ) : null}
 
                   {selectedChannelAlerts.length > ALERTS_PER_PAGE ? (
                     <section className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-surface)] p-3">

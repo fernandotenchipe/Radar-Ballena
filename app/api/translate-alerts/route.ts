@@ -301,7 +301,8 @@ async function translateWithAI(
   if (items.length === 0) return result;
   if (!process.env.OPENAI_API_KEY) return result;
 
-  const concurrency = Math.min(2, items.length);
+  // Split the batch a bit finer so six alerts do not wait on two larger chunks.
+  const concurrency = Math.min(3, items.length);
   const retries = 2; // number of retries
   const baseBackoff = 500; // ms
 

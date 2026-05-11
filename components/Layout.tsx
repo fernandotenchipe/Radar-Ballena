@@ -198,7 +198,7 @@ export default function DashboardLayout({ channels, whalePerformance, onUnlockCh
         .map((channel) => ({
           id: channel.id,
           name: channel.name,
-          alertCount: channel.alerts.filter((alert) => !alert.isHistory).length,
+          alertCount: channel.alerts.length,
           unlocked: channel.unlocked,
         })),
     [channels],

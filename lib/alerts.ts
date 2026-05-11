@@ -23,6 +23,8 @@ const WHALE_IDS = [
   "nba_volume",
   "global_trader",
   "sports_esports_titan",
+  "geopolitical_macro",
+  "macro_economics",
 ];
 
 function getAuthHeaders(): Record<string, string> {

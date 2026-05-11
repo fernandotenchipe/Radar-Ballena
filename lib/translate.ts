@@ -1,3 +1,5 @@
+import { buildLocalAlertTranslation } from "@/lib/translateFallback";
+
 export type AlertTranslationInput = {
   id: string;
   whaleName?: string;
@@ -11,6 +13,8 @@ export type AlertTranslationResult = {
   marketTitleEs?: string;
   answerEs?: string;
 };
+
+export const TRANSLATION_UPDATE_EVENT = "radarballena-translations-updated";
 
 type TranslationCacheEntry = {
   translation: AlertTranslationResult;
@@ -145,6 +149,83 @@ function materializeTranslation(
   };
 }
 
+async function warmTranslationCache(
+  missing: AlertTranslationInput[],
+  cached: TranslationCache,
+) {
+  try {
+    console.log("calling /api/translate-alerts with IDs:", missing.slice(0, 6).map((m) => m.id));
+
+    const res = await fetch("/api/translate-alerts", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        items: missing.slice(0, 6),
+      }),
+    });
+
+    console.log("translate-alerts status", res.status);
+
+    if (!res.ok) {
+      return;
+    }
+
+    const data = (await res.json()) as {
+      translations?: AlertTranslationResult[];
+    };
+
+    console.log("translate-alerts received IDs:", (data.translations ?? []).map((t) => t.id));
+
+    const usableFreshById = new Map<string, AlertTranslationResult>();
+
+    for (const translation of data.translations ?? []) {
+      const original = missing.find((item) => item.id === translation.id);
+      if (!original) {
+        console.warn("translateAlerts: received translation for unknown ID", translation.id);
+        continue;
+      }
+
+      const key = getCacheKey(original);
+      const isUntranslated = looksUntranslated(original, translation);
+
+      if (isUntranslated) {
+        console.log(`[CLIENT] Rejecting translation for ${translation.id}: "${translation.marketTitleEs?.substring(0, 60)}" looks untranslated`);
+        continue;
+      }
+
+      usableFreshById.set(original.id, translation);
+      cached[key] = {
+        translation,
+        sourceSignature: getSourceSignature(original),
+      };
+    }
+
+    window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cached));
+
+    const result = missing
+      .map((item) => {
+        const fresh = usableFreshById.get(item.id);
+        if (fresh) return materializeTranslation(item, fresh);
+
+        const cachedEntry = getCachedEntry(item, cached);
+        return materializeTranslation(item, cachedEntry?.translation);
+      })
+      .filter((value): value is AlertTranslationResult => Boolean(value));
+
+    if (result.length > 0) {
+      window.dispatchEvent(
+        new CustomEvent(TRANSLATION_UPDATE_EVENT, {
+          detail: { translations: result },
+        }),
+      );
+    }
+  } catch (error) {
+    console.error("translateAlerts warm cache error:", error);
+  }
+}
+
 export async function translateAlerts(
   items: AlertTranslationInput[],
 ): Promise<AlertTranslationResult[]> {
@@ -177,89 +258,21 @@ export async function translateAlerts(
   console.log("translateAlerts cached keys", Object.keys(cached).length);
   console.log("translateAlerts missing IDs", missing.map((m) => m.id));
 
-  if (missing.length === 0) {
-    const result = items
-      .map((item) => materializeTranslation(item, getCachedEntry(item, cached)?.translation))
-      .filter((value): value is AlertTranslationResult => Boolean(value));
-    console.log("translateAlerts returning from cache IDs:", result.map((r) => r.id));
-    return result;
+  if (missing.length > 0) {
+    void warmTranslationCache(missing, cached);
   }
 
-  try {
-    console.log("calling /api/translate-alerts with IDs:", missing.slice(0, 6).map((m) => m.id));
-
-    const res = await fetch("/api/translate-alerts", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        items: missing.slice(0, 6),
-      }),
-    });
-
-    console.log("translate-alerts status", res.status);
-
-    if (!res.ok) {
-      const result = items
-        .map((item) => materializeTranslation(item, getCachedEntry(item, cached)?.translation))
-        .filter((value): value is AlertTranslationResult => Boolean(value));
-      console.log("translateAlerts (error response) returning IDs:", result.map((r) => r.id));
-      return result;
-    }
-
-    const data = (await res.json()) as {
-      translations?: AlertTranslationResult[];
-    };
-
-    console.log("translate-alerts received IDs:", (data.translations ?? []).map((t) => t.id));
-
-    const usableFreshById = new Map<string, AlertTranslationResult>();
-
-    for (const translation of data.translations ?? []) {
-      const original = missing.find((item) => item.id === translation.id);
-      if (!original) {
-        console.warn("translateAlerts: received translation for unknown ID", translation.id);
-        continue;
+  const result = items
+    .map((item) => {
+      const cachedEntry = getCachedEntry(item, cached);
+      if (cachedEntry?.translation) {
+        return materializeTranslation(item, cachedEntry.translation);
       }
 
-      const key = getCacheKey(original);
-      const isUntranslated = looksUntranslated(original, translation);
-      
-      if (isUntranslated) {
-        console.log(`[CLIENT] Rejecting translation for ${translation.id}: "${translation.marketTitleEs?.substring(0, 60)}" looks untranslated`);
-      }
-      
-      if (!isUntranslated) {
-        usableFreshById.set(original.id, translation);
-        cached[key] = {
-          translation,
-          sourceSignature: getSourceSignature(original),
-        };
-      }
-    }
+      return materializeTranslation(item, buildLocalAlertTranslation(item));
+    })
+    .filter((value): value is AlertTranslationResult => Boolean(value));
 
-    window.localStorage.setItem(CACHE_STORAGE_KEY, JSON.stringify(cached));
-
-    const result = items
-      .map((item) => {
-        const fresh = usableFreshById.get(item.id);
-        if (fresh) return materializeTranslation(item, fresh);
-
-        const cachedEntry = getCachedEntry(item, cached);
-        return materializeTranslation(item, cachedEntry?.translation);
-      })
-      .filter((value): value is AlertTranslationResult => Boolean(value));
-    
-    console.log("translateAlerts returning final IDs:", result.map((r) => r.id));
-    return result;
-  } catch (error) {
-    console.error("translateAlerts error:", error);
-    // On error, return only cached entries that look translated.
-    const result = items
-      .map((item) => materializeTranslation(item, getCachedEntry(item, cached)?.translation))
-      .filter((value): value is AlertTranslationResult => Boolean(value));
-    console.log("translateAlerts (error catch) returning IDs:", result.map((r) => r.id));
-    return result;
-  }
+  console.log("translateAlerts returning immediate IDs:", result.map((r) => r.id));
+  return result;
 }

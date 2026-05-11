@@ -31,7 +31,7 @@ type AITranslation = {
 };
 
 const MAX_ITEMS = 8;
-const TIMEOUT_MS = 3_500;
+const TIMEOUT_MS = 2_500;
 const MAX_CACHE_SIZE = 3000;
 
 const globalCache = globalThis as typeof globalThis & {
@@ -303,8 +303,8 @@ async function translateWithAI(
 
   // Split the batch a bit finer so six alerts do not wait on two larger chunks.
   const concurrency = Math.min(3, items.length);
-  const retries = 2; // number of retries
-  const baseBackoff = 500; // ms
+  const retries = 1; // number of retries
+  const baseBackoff = 250; // ms
 
   function chunkArray<T>(arr: T[], n: number): T[][] {
     const out: T[][] = [];
@@ -362,7 +362,7 @@ ${JSON.stringify(chunk)}`;
         body: JSON.stringify({
           model: process.env.OPENAI_TRANSLATE_MODEL ?? "gpt-4o-mini",
           temperature: 0,
-          max_tokens: 1800,
+          max_tokens: 1200,
           response_format: { type: "json_object" },
           messages: [
             { role: "system", content: "Devuelve unicamente JSON valido. Nada de markdown." },

@@ -12,9 +12,9 @@ export const metadata: Metadata = {
   title: "Whale Radar Dashboard",
   description: "Dashboard de whale alerts con estilo dark fintech",
   icons: {
-    icon: "/radarballena-favicon.png?v=1",
-    shortcut: "/radarballena-favicon.png?v=1",
-    apple: "/radarballena-favicon.png?v=1",
+    icon: "/icon.png?v=1",
+    shortcut: "/icon.png?v=1",
+    apple: "/icon.png?v=1",
   },
 };
 

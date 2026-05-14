@@ -90,9 +90,17 @@ function makeKey(item: TranslateItem): string {
 }
 
 function setCache(key: string, value: CachedTranslation) {
+  // When cache reaches limit, delete 20% of oldest entries to prevent memory leak
   if (cache.size >= MAX_CACHE_SIZE) {
-    const firstKey = cache.keys().next().value;
-    if (firstKey) cache.delete(firstKey);
+    const targetSize = Math.floor(MAX_CACHE_SIZE * 0.8); // Target 80% of max
+    const entriesToDelete = cache.size - targetSize;
+    
+    let deleted = 0;
+    for (const cacheKey of cache.keys()) {
+      if (deleted >= entriesToDelete) break;
+      cache.delete(cacheKey);
+      deleted++;
+    }
   }
 
   cache.set(key, value);

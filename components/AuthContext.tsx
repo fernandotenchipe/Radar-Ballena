@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
+import { getCsrfToken, clearCsrfToken, getCsrfHeaders, fetchCsrfToken } from "@/lib/csrf";
 
 type User = {
   email: string;
@@ -22,7 +23,9 @@ const SESSION_KEY = "radar_session";
 const LAST_ACTIVITY_KEY = "radar_last_activity";
 const INACTIVITY_LIMIT_MS = 2 * 60 * 60 * 1000;
 
-const TOKEN_KEY = "rb-token";
+// NOTE: Token is NO LONGER stored in localStorage
+// It's now stored in httpOnly cookies managed by the server
+// Only the user info is stored locally (not sensitive)
 const USER_KEY = "rb-user";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -46,8 +49,8 @@ function getInitialAuthState(): {
   if (session !== "true" || !lastActivity || Date.now() - lastActivity > INACTIVITY_LIMIT_MS) {
     window.localStorage.removeItem(SESSION_KEY);
     window.localStorage.removeItem(LAST_ACTIVITY_KEY);
-    window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(USER_KEY);
+    clearCsrfToken();
 
     return {
       isAuthenticated: false,
@@ -56,10 +59,9 @@ function getInitialAuthState(): {
     };
   }
 
-  const savedToken = window.localStorage.getItem(TOKEN_KEY);
   const savedUser = window.localStorage.getItem(USER_KEY);
 
-  if (!savedToken || !savedUser) {
+  if (!savedUser) {
     return {
       isAuthenticated: false,
       user: null,
@@ -74,16 +76,18 @@ function getInitialAuthState(): {
       throw new Error("Invalid stored user");
     }
 
+    // Token is in httpOnly cookie, not accessible here
+    // We trust the cookie is present if session is valid
     return {
       isAuthenticated: true,
       user: parsedUser,
-      token: savedToken,
+      token: "cookie", // Placeholder - actual token is in httpOnly cookie
     };
   } catch {
     window.localStorage.removeItem(SESSION_KEY);
     window.localStorage.removeItem(LAST_ACTIVITY_KEY);
-    window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(USER_KEY);
+    clearCsrfToken();
 
     return {
       isAuthenticated: false,
@@ -99,14 +103,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(initialAuth.user);
   const [token, setToken] = useState<string | null>(initialAuth.token);
 
-  function persistSession(jwt: string, userData: User) {
-    setToken(jwt);
+  function persistSession(userData: User) {
+    // Token is stored in httpOnly cookie by the server, not here
+    setToken("cookie"); // Placeholder
     setUser(userData);
     setIsAuthenticated(true);
 
     window.localStorage.setItem(SESSION_KEY, "true");
     window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
-    window.localStorage.setItem(TOKEN_KEY, jwt);
     window.localStorage.setItem(USER_KEY, JSON.stringify(userData));
   }
 
@@ -117,8 +121,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.localStorage.removeItem(SESSION_KEY);
     window.localStorage.removeItem(LAST_ACTIVITY_KEY);
-    window.localStorage.removeItem(TOKEN_KEY);
     window.localStorage.removeItem(USER_KEY);
+    clearCsrfToken();
   }, []);
 
   const refreshActivity = useCallback(() => {
@@ -153,10 +157,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error("NEXT_PUBLIC_API_URL no está configurada");
     }
 
+    // Get CSRF token if not already present
+    let csrfToken = getCsrfToken();
+    if (!csrfToken) {
+      csrfToken = await fetchCsrfToken(API_URL);
+    }
+
     const res = await fetch(`${API_URL}/api/auth/login`, {
       method: "POST",
+      credentials: "include", // Send and receive cookies (httpOnly)
       headers: {
         "Content-Type": "application/json",
+        ...getCsrfHeaders(), // Add CSRF token to headers
       },
       body: JSON.stringify({ email, password }),
     });
@@ -167,19 +179,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw new Error(data?.error || "Credenciales inválidas");
     }
 
-    const jwt = data.token;
     const userData = data.user;
 
-    if (!jwt || !userData?.email) {
+    if (!userData?.email) {
       throw new Error("Respuesta de login inválida");
     }
 
-    persistSession(jwt, userData);
+    // Token is now in httpOnly cookie, don't store it here
+    persistSession(userData);
   };
 
   const completeInviteRegistration = (jwt: string, userData: User) => {
     // Persist the authenticated session returned by the backend after invite registration
-    persistSession(jwt, userData);
+    // Note: jwt is not used (already in httpOnly cookie), but kept for API compatibility
+    persistSession(userData);
   };
 
   useEffect(() => {
@@ -192,6 +205,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const interval = window.setInterval(() => {
       checkSession();
     }, 30_000);
+
+    // Fetch CSRF token on app startup
+    if (API_URL && !getCsrfToken()) {
+      fetchCsrfToken(API_URL).catch((error) => {
+        console.error("Failed to initialize CSRF token:", error);
+      });
+    }
 
     return () => {
       for (const event of events) {

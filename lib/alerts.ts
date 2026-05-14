@@ -28,14 +28,9 @@ const WHALE_IDS = [
 ];
 
 function getAuthHeaders(): Record<string, string> {
-  const token =
-    typeof window !== "undefined"
-      ? window.localStorage.getItem("rb-token")
-      : null;
-
+  // Token is now in httpOnly cookie, sent automatically with credentials: 'include'
   return {
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
@@ -128,27 +123,37 @@ export async function fetchAlerts(): Promise<ApiAlert[]> {
   const responses = await Promise.all(
     WHALE_IDS.map(async (whaleId) => {
       const params = new URLSearchParams({ whale: whaleId, limit: "100" });
-
-      const res = await fetch(`${API_URL}/api/alerts?${params.toString()}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-      });
-
-      if (!res.ok) {
-        throw new Error(`No se pudieron obtener alerts para ${whaleId} (${res.status})`);
-      }
-
-      const json = (await res.json()) as { data?: ApiAlert[] };
-      const data = json.data ?? [];
+      
+      // Create abort controller for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
       try {
-        // diagnostic log
-        console.log(`fetchAlerts: whale=${whaleId} returned=${Array.isArray(data) ? data.length : 0}`);
-      } catch {
-        // ignore
-      }
+        const res = await fetch(`${API_URL}/api/alerts?${params.toString()}`, {
+          method: "GET",
+          credentials: "include", // Send cookies (including httpOnly auth token)
+          signal: controller.signal,
+          headers: getAuthHeaders(),
+        });
 
-      return data;
+        if (!res.ok) {
+          throw new Error(`No se pudieron obtener alerts para ${whaleId} (${res.status})`);
+        }
+
+        const json = (await res.json()) as { data?: ApiAlert[] };
+        const data = json.data ?? [];
+
+        try {
+          // diagnostic log
+          console.log(`fetchAlerts: whale=${whaleId} returned=${Array.isArray(data) ? data.length : 0}`);
+        } catch {
+          // ignore
+        }
+
+        return data;
+      } finally {
+        clearTimeout(timeoutId);
+      }
     }),
   );
 
@@ -213,15 +218,25 @@ export async function fetchStats() {
     throw new Error("NEXT_PUBLIC_API_URL no está configurada");
   }
 
-  const res = await fetch(`${API_URL}/api/stats`, {
-    method: "GET",
-    headers: getAuthHeaders(),
-  });
+  // Create abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
-  if (!res.ok) {
-    throw new Error(`No se pudieron obtener stats (${res.status})`);
+  try {
+    const res = await fetch(`${API_URL}/api/stats`, {
+      method: "GET",
+      credentials: "include", // Send cookies (including httpOnly auth token)
+      signal: controller.signal,
+      headers: getAuthHeaders(),
+    });
+
+    if (!res.ok) {
+      throw new Error(`No se pudieron obtener stats (${res.status})`);
+    }
+
+    const json = await res.json();
+    return json.data ?? [];
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  const json = await res.json();
-  return json.data ?? [];
 }

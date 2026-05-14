@@ -50,11 +50,10 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const TOKEN_KEY = "rb-token";
 
 function getAuthHeaders(): Record<string, string> {
-  const token = typeof window !== "undefined" ? window.localStorage.getItem(TOKEN_KEY) : null;
-
+  // Token is now in httpOnly cookie, sent automatically with credentials: 'include'
+  // No need to retrieve it here
   return {
     "Content-Type": "application/json",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 }
 
@@ -115,25 +114,35 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error("NEXT_PUBLIC_API_URL no está configurada");
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers: {
-      ...getAuthHeaders(),
-      ...(init?.headers ?? {}),
-    },
-  });
+  // Create abort controller for timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
 
-  const payload = await response.json().catch(() => null);
+  try {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...init,
+      credentials: "include", // Send cookies (including httpOnly auth token)
+      signal: controller.signal,
+      headers: {
+        ...getAuthHeaders(),
+        ...(init?.headers ?? {}),
+      },
+    });
 
-  if (response.status === 401) {
-    throw new ApiError(401, payload?.error || "Sesión expirada. Inicia sesión otra vez.");
+    const payload = await response.json().catch(() => null);
+
+    if (response.status === 401) {
+      throw new ApiError(401, payload?.error || "Sesión expirada. Inicia sesión otra vez.");
+    }
+
+    if (!response.ok) {
+      throw new ApiError(response.status, payload?.error || `Error HTTP ${response.status}`);
+    }
+
+    return payload as T;
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  if (!response.ok) {
-    throw new ApiError(response.status, payload?.error || `Error HTTP ${response.status}`);
-  }
-
-  return payload as T;
 }
 
 export async function fetchChannels(): Promise<ApiChannel[]> {
